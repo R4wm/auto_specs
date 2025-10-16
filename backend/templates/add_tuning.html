@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Update Tuning Settings - {{ build['name'] }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/build/{{ build['id'] }}" class="btn">← Back to Build</a>
+</div>
+
+<div class="card">
+    <h2>Update Tuning Settings</h2>
+    <p><strong>Build:</strong> {{ build['name'] }}</p>
+    {% if latest_tuning %}
+    <p><em>Current settings will be copied. Modify as needed and save to create new tuning record.</em></p>
+    {% endif %}
+
+    <form method="POST">
+        <h3>Carburetor Jetting</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="primary_jet_size">Primary Jet Size</label>
+                <input type="text" name="primary_jet_size" id="primary_jet_size"
+                       value="{{ latest_tuning['primary_jet_size'] if latest_tuning and latest_tuning['primary_jet_size'] else '' }}"
+                       placeholder="e.g., 75">
+            </div>
+            <div class="form-group">
+                <label for="secondary_jet_size">Secondary Jet Size</label>
+                <input type="text" name="secondary_jet_size" id="secondary_jet_size"
+                       value="{{ latest_tuning['secondary_jet_size'] if latest_tuning and latest_tuning['secondary_jet_size'] else '' }}"
+                       placeholder="e.g., 85">
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="power_valve_size">Power Valve Size</label>
+                <input type="text" name="power_valve_size" id="power_valve_size"
+                       value="{{ latest_tuning['power_valve_size'] if latest_tuning and latest_tuning['power_valve_size'] else '' }}"
+                       placeholder="e.g., 6.5">
+            </div>
+            <div class="form-group">
+                <label for="idle_mixture_turns">Idle Mixture Screw (turns out)</label>
+                <input type="number" step="0.25" name="idle_mixture_turns" id="idle_mixture_turns"
+                       value="{{ latest_tuning['idle_mixture_turns'] if latest_tuning and latest_tuning['idle_mixture_turns'] else '' }}"
+                       placeholder="e.g., 2.5">
+            </div>
+        </div>
+
+        <h4>Metering Rods</h4>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="metering_rod_primary">Primary Metering Rods</label>
+                <input type="text" name="metering_rod_primary" id="metering_rod_primary"
+                       value="{{ latest_tuning['metering_rod_primary'] if latest_tuning and latest_tuning['metering_rod_primary'] else '' }}">
+            </div>
+            <div class="form-group">
+                <label for="metering_rod_secondary">Secondary Metering Rods</label>
+                <input type="text" name="metering_rod_secondary" id="metering_rod_secondary"
+                       value="{{ latest_tuning['metering_rod_secondary'] if latest_tuning and latest_tuning['metering_rod_secondary'] else '' }}">
+            </div>
+        </div>
+
+        <h4>Accelerator Pump</h4>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="accelerator_pump_cam">Pump Cam</label>
+                <input type="text" name="accelerator_pump_cam" id="accelerator_pump_cam"
+                       value="{{ latest_tuning['accelerator_pump_cam'] if latest_tuning and latest_tuning['accelerator_pump_cam'] else '' }}">
+            </div>
+            <div class="form-group">
+                <label for="accelerator_pump_nozzle">Pump Nozzle</label>
+                <input type="text" name="accelerator_pump_nozzle" id="accelerator_pump_nozzle"
+                       value="{{ latest_tuning['accelerator_pump_nozzle'] if latest_tuning and latest_tuning['accelerator_pump_nozzle'] else '' }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="accelerator_pump_spring">Pump Spring</label>
+            <input type="text" name="accelerator_pump_spring" id="accelerator_pump_spring"
+                   value="{{ latest_tuning['accelerator_pump_spring'] if latest_tuning and latest_tuning['accelerator_pump_spring'] else '' }}">
+        </div>
+
+        <h3>Ignition Timing</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="initial_timing_deg">Initial Timing (degrees)</label>
+                <input type="number" step="0.5" name="initial_timing_deg" id="initial_timing_deg"
+                       value="{{ latest_tuning['initial_timing_deg'] if latest_tuning and latest_tuning['initial_timing_deg'] else '' }}"
+                       placeholder="e.g., 12">
+            </div>
+            <div class="form-group">
+                <label for="total_timing_deg">Total Timing (degrees)</label>
+                <input type="number" step="0.5" name="total_timing_deg" id="total_timing_deg"
+                       value="{{ latest_tuning['total_timing_deg'] if latest_tuning and latest_tuning['total_timing_deg'] else '' }}"
+                       placeholder="e.g., 36">
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="vacuum_advance_deg">Vacuum Advance (degrees)</label>
+                <input type="number" step="0.5" name="vacuum_advance_deg" id="vacuum_advance_deg"
+                       value="{{ latest_tuning['vacuum_advance_deg'] if latest_tuning and latest_tuning['vacuum_advance_deg'] else '' }}"
+                       placeholder="e.g., 15">
+            </div>
+            <div class="form-group">
+                <label for="mechanical_advance_springs">Mechanical Advance Springs</label>
+                <input type="text" name="mechanical_advance_springs" id="mechanical_advance_springs"
+                       value="{{ latest_tuning['mechanical_advance_springs'] if latest_tuning and latest_tuning['mechanical_advance_springs'] else '' }}">
+            </div>
+        </div>
+
+        <h4>Spark Plugs</h4>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="spark_plugs">Spark Plug Part Number</label>
+                <input type="text" name="spark_plugs" id="spark_plugs"
+                       value="{{ latest_tuning['spark_plugs'] if latest_tuning and latest_tuning['spark_plugs'] else '' }}"
+                       placeholder="e.g., NGK R5671A-9">
+            </div>
+            <div class="form-group">
+                <label for="spark_plug_condition">Plug Condition/Color</label>
+                <input type="text" name="spark_plug_condition" id="spark_plug_condition"
+                       value="{{ latest_tuning['spark_plug_condition'] if latest_tuning and latest_tuning['spark_plug_condition'] else '' }}"
+                       placeholder="e.g., tan/light brown, black/sooty">
+            </div>
+        </div>
+
+        <h3>Vacuum Readings</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="idle_vacuum_inhg">Idle Vacuum (in Hg)</label>
+                <input type="number" step="0.5" name="idle_vacuum_inhg" id="idle_vacuum_inhg"
+                       value="{{ latest_tuning['idle_vacuum_inhg'] if latest_tuning and latest_tuning['idle_vacuum_inhg'] else '' }}"
+                       placeholder="e.g., 18">
+            </div>
+            <div class="form-group">
+                <label for="cruise_vacuum_inhg">Cruise Vacuum (in Hg)</label>
+                <input type="number" step="0.5" name="cruise_vacuum_inhg" id="cruise_vacuum_inhg"
+                       value="{{ latest_tuning['cruise_vacuum_inhg'] if latest_tuning and latest_tuning['cruise_vacuum_inhg'] else '' }}"
+                       placeholder="e.g., 16">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="wot_vacuum_inhg">WOT Vacuum (in Hg)</label>
+            <input type="number" step="0.5" name="wot_vacuum_inhg" id="wot_vacuum_inhg"
+                   value="{{ latest_tuning['wot_vacuum_inhg'] if latest_tuning and latest_tuning['wot_vacuum_inhg'] else '' }}"
+                   placeholder="e.g., 0">
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea name="notes" id="notes" placeholder="Describe changes made, performance observations, etc...">{{ latest_tuning['notes'] if latest_tuning and latest_tuning['notes'] else '' }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Tuning Settings</button>
+    </form>
+</div>
+{% endblock %}

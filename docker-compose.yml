@@ -1,14 +1,65 @@
 services:
-  web:
-    build:
-      context: .
-      network: host
-    network_mode: host
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=auto_specs_user
+      - POSTGRES_PASSWORD=auto_specs_pass
+      - POSTGRES_DB=auto_specs_db
+    ports:
+      - "5432:5432"
     volumes:
-      # Mount database as volume so changes persist
-      - ./engine_build_normalized.db:/app/engine_build_normalized.db
-      # Mount templates for easy development
-      - ./templates:/app/templates
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auto_specs_user -d auto_specs_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount for hot-reload during development
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
     environment:
       - PYTHONUNBUFFERED=1
+      - FRONTEND_URL=http://localhost:5173
+      - DATABASE_URL=postgresql://auto_specs_user:auto_specs_pass@postgres:5432/auto_specs_db
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount for hot-reload during development
+      - ./frontend:/app
+      # Exclude node_modules from mount (use container's version)
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

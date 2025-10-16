@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Add Maintenance - {{ build['name'] }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/build/{{ build['id'] }}" class="btn">← Back to Build</a>
+</div>
+
+<div class="card">
+    <h2>Add Maintenance Record</h2>
+    <p><strong>Build:</strong> {{ build['name'] }}</p>
+
+    <form method="POST">
+        <h3>Maintenance Details</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="maintenance_type">Maintenance Type *</label>
+                <select name="maintenance_type" id="maintenance_type" required>
+                    <option value="">Select...</option>
+                    <option value="Fluid Change">Fluid Change</option>
+                    <option value="Filter Change">Filter Change</option>
+                    <option value="Inspection">Inspection</option>
+                    <option value="Repair">Repair</option>
+                    <option value="Upgrade">Upgrade</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="item_description">Item Description *</label>
+                <input type="text" name="item_description" id="item_description" required
+                       placeholder="e.g., Engine Oil, Transmission Fluid, Oil Filter">
+            </div>
+        </div>
+
+        <h3>Quantity</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="quantity">Quantity</label>
+                <input type="number" step="0.1" name="quantity" id="quantity" placeholder="e.g., 5">
+            </div>
+            <div class="form-group">
+                <label for="unit">Unit</label>
+                <select name="unit" id="unit">
+                    <option value="">Select...</option>
+                    <option value="quarts">Quarts</option>
+                    <option value="gallons">Gallons</option>
+                    <option value="liters">Liters</option>
+                    <option value="pcs">Pieces</option>
+                </select>
+            </div>
+        </div>
+
+        <h3>Runtime Tracking</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="engine_hours">Engine Hours</label>
+                <input type="number" step="0.1" name="engine_hours" id="engine_hours" placeholder="e.g., 25.5">
+            </div>
+            <div class="form-group">
+                <label for="odometer_miles">Odometer (miles)</label>
+                <input type="number" step="1" name="odometer_miles" id="odometer_miles">
+            </div>
+        </div>
+
+        <h3>Parts/Products Used</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="brand">Brand</label>
+                <input type="text" name="brand" id="brand" placeholder="e.g., Royal Purple, Mobil 1">
+            </div>
+            <div class="form-group">
+                <label for="part_number">Part Number</label>
+                <input type="text" name="part_number" id="part_number" placeholder="e.g., FL-1A">
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="viscosity">Viscosity (for fluids)</label>
+                <input type="text" name="viscosity" id="viscosity" placeholder="e.g., 10W-30, 75W-90">
+            </div>
+            <div class="form-group">
+                <label for="synthetic">Oil Type</label>
+                <select name="synthetic" id="synthetic">
+                    <option value="">Select...</option>
+                    <option value="Full Synthetic">Full Synthetic</option>
+                    <option value="Synthetic Blend">Synthetic Blend</option>
+                    <option value="Conventional">Conventional</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="old_condition">Old Fluid/Part Condition</label>
+            <textarea name="old_condition" id="old_condition" placeholder="Describe condition of old fluid/part (color, smell, wear, etc.)"></textarea>
+        </div>
+
+        <h3>Oil Pressure (if applicable)</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="oil_pressure_idle_psi">Idle Pressure (PSI)</label>
+                <input type="number" step="0.1" name="oil_pressure_idle_psi" id="oil_pressure_idle_psi" placeholder="e.g., 20">
+            </div>
+            <div class="form-group">
+                <label for="oil_pressure_running_psi">Running Pressure (PSI)</label>
+                <input type="number" step="0.1" name="oil_pressure_running_psi" id="oil_pressure_running_psi" placeholder="e.g., 55">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="oil_pressure_rpm">Pressure Measured at RPM</label>
+            <input type="number" step="100" name="oil_pressure_rpm" id="oil_pressure_rpm" placeholder="e.g., 2000">
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea name="notes" id="notes" placeholder="Additional notes, observations, or issues..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Maintenance Record</button>
+    </form>
+</div>
+{% endblock %}

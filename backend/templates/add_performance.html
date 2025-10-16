@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Add Performance Test - {{ build['name'] }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/build/{{ build['id'] }}" class="btn">← Back to Build</a>
+</div>
+
+<div class="card">
+    <h2>Add Performance Test</h2>
+    <p><strong>Build:</strong> {{ build['name'] }}</p>
+
+    <form method="POST">
+        <h3>Test Conditions</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="test_location">Location</label>
+                <input type="text" name="test_location" id="test_location" placeholder="e.g., Local Street, Drag Strip">
+            </div>
+            <div class="form-group">
+                <label for="weather_temp_f">Temperature (°F)</label>
+                <input type="number" step="0.1" name="weather_temp_f" id="weather_temp_f">
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="weather_humidity_pct">Humidity (%)</label>
+                <input type="number" step="0.1" name="weather_humidity_pct" id="weather_humidity_pct">
+            </div>
+            <div class="form-group">
+                <label for="elevation_ft">Elevation (ft)</label>
+                <input type="number" step="1" name="elevation_ft" id="elevation_ft">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="track_condition">Track Condition</label>
+            <input type="text" name="track_condition" id="track_condition" placeholder="e.g., Dry, Prepped, Damp">
+        </div>
+
+        <h3>Acceleration Tests</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="zero_to_60_sec">0-60 mph (seconds)</label>
+                <input type="number" step="0.01" name="zero_to_60_sec" id="zero_to_60_sec" placeholder="e.g., 5.2">
+            </div>
+            <div class="form-group">
+                <label for="zero_to_100_sec">0-100 mph (seconds)</label>
+                <input type="number" step="0.01" name="zero_to_100_sec" id="zero_to_100_sec">
+            </div>
+        </div>
+
+        <h4>1/8 Mile</h4>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="eighth_mile_et">ET (seconds)</label>
+                <input type="number" step="0.01" name="eighth_mile_et" id="eighth_mile_et" placeholder="e.g., 8.45">
+            </div>
+            <div class="form-group">
+                <label for="eighth_mile_mph">Trap Speed (mph)</label>
+                <input type="number" step="0.1" name="eighth_mile_mph" id="eighth_mile_mph" placeholder="e.g., 85.2">
+            </div>
+        </div>
+
+        <h4>1/4 Mile</h4>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="quarter_mile_et">ET (seconds)</label>
+                <input type="number" step="0.01" name="quarter_mile_et" id="quarter_mile_et" placeholder="e.g., 13.8">
+            </div>
+            <div class="form-group">
+                <label for="quarter_mile_mph">Trap Speed (mph)</label>
+                <input type="number" step="0.1" name="quarter_mile_mph" id="quarter_mile_mph" placeholder="e.g., 102.5">
+            </div>
+        </div>
+
+        <h3>Other Tests</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="sixty_to_zero_ft">60-0 Braking (feet)</label>
+                <input type="number" step="0.1" name="sixty_to_zero_ft" id="sixty_to_zero_ft">
+            </div>
+            <div class="form-group">
+                <label for="lap_time_sec">Lap Time (seconds)</label>
+                <input type="number" step="0.01" name="lap_time_sec" id="lap_time_sec">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="track_name">Track/Course Name</label>
+            <input type="text" name="track_name" id="track_name" placeholder="e.g., Laguna Seca">
+        </div>
+
+        <h3>Dyno Results</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="dyno_hp">Horsepower</label>
+                <input type="number" step="0.1" name="dyno_hp" id="dyno_hp">
+            </div>
+            <div class="form-group">
+                <label for="dyno_torque">Torque (lb-ft)</label>
+                <input type="number" step="0.1" name="dyno_torque" id="dyno_torque">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="dyno_type">Dyno Type</label>
+            <select name="dyno_type" id="dyno_type">
+                <option value="">Select...</option>
+                <option value="Wheel HP">Wheel HP</option>
+                <option value="Crank HP">Crank HP (corrected)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea name="notes" id="notes" placeholder="Any observations, issues, or additional details..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Performance Test</button>
+    </form>
+</div>
+{% endblock %}

@@ -2,18 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies first (cached layer)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
-COPY main.py .
-COPY database_design.py .
-COPY add_maintenance_tables.py .
-COPY templates/ templates/
+# Copy everything else (.dockerignore filters unwanted files)
+COPY . .
 
-# Copy database (or mount as volume)
-COPY engine_build_normalized.db .
+# Create and populate database
+RUN python database_design.py && python populate_database.py
 
 # Expose port
 EXPOSE 8000

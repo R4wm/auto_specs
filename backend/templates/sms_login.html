@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}SMS Login - Auto Specs Manager{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 2rem auto;">
+    <h2 style="margin-bottom: 1.5rem;">Login with SMS</h2>
+
+    <!-- Step 1: Phone Number Entry -->
+    <div id="phone-entry" style="display: block;">
+        <form id="phone-form">
+            <div class="form-group">
+                <label for="phone_number">Phone Number</label>
+                <input
+                    type="tel"
+                    id="phone_number"
+                    name="phone_number"
+                    required
+                    placeholder="+14155552671"
+                    pattern="\+[1-9]\d{1,14}"
+                    title="Phone number must be in E.164 format (e.g., +14155552671)"
+                >
+                <small style="color: #666; display: block; margin-top: 0.5rem;">
+                    Enter your phone number in international format (e.g., +1 for US)
+                </small>
+            </div>
+
+            <button type="submit" class="btn btn-success" id="send-code-btn">
+                Send Verification Code
+            </button>
+        </form>
+    </div>
+
+    <!-- Step 2: Verification Code Entry -->
+    <div id="code-entry" style="display: none;">
+        <form action="/auth/sms/verify" method="post">
+            <input type="hidden" id="phone_number_hidden" name="phone_number">
+
+            <div class="form-group">
+                <label for="verification_code">Verification Code</label>
+                <input
+                    type="text"
+                    id="verification_code"
+                    name="verification_code"
+                    required
+                    maxlength="6"
+                    pattern="\d{6}"
+                    placeholder="123456"
+                    autocomplete="one-time-code"
+                >
+                <small style="color: #666; display: block; margin-top: 0.5rem;">
+                    Enter the 6-digit code sent to your phone
+                </small>
+            </div>
+
+            <!-- Optional: Name fields for new users -->
+            <div id="name-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="first_name">First Name (Optional)</label>
+                    <input type="text" id="first_name" name="first_name">
+                </div>
+
+                <div class="form-group">
+                    <label for="last_name">Last Name (Optional)</label>
+                    <input type="text" id="last_name" name="last_name">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success">
+                Verify & Login
+            </button>
+
+            <button type="button" class="btn" onclick="resetForm()" style="margin-left: 0.5rem;">
+                Change Number
+            </button>
+        </form>
+
+        <div id="resend-section" style="margin-top: 1rem; text-align: center;">
+            <button type="button" class="btn" onclick="resendCode()" id="resend-btn">
+                Resend Code
+            </button>
+        </div>
+    </div>
+
+    <div style="margin-top: 1.5rem; text-align: center; padding-top: 1.5rem; border-top: 1px solid #ddd;">
+        <p>Or use a different method:</p>
+        <a href="/login" class="btn" style="margin-right: 0.5rem;">Login with Email</a>
+        <a href="/register" class="btn">Register</a>
+    </div>
+</div>
+
+<script>
+    let currentPhoneNumber = '';
+
+    // Handle phone number form submission
+    document.getElementById('phone-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const phoneNumber = document.getElementById('phone_number').value;
+        const sendButton = document.getElementById('send-code-btn');
+
+        // Disable button and show loading state
+        sendButton.disabled = true;
+        sendButton.textContent = 'Sending...';
+
+        try {
+            // Send verification code
+            const formData = new FormData();
+            formData.append('phone_number', phoneNumber);
+
+            const response = await fetch('/auth/sms/send', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Store phone number and show verification code form
+                currentPhoneNumber = phoneNumber;
+                document.getElementById('phone_number_hidden').value = phoneNumber;
+                document.getElementById('phone-entry').style.display = 'none';
+                document.getElementById('code-entry').style.display = 'block';
+                document.getElementById('name-fields').style.display = 'block';
+
+                // Focus on verification code input
+                document.getElementById('verification_code').focus();
+            } else {
+                alert(data.detail || 'Failed to send verification code');
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send Verification Code';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            sendButton.disabled = false;
+            sendButton.textContent = 'Send Verification Code';
+        }
+    });
+
+    function resetForm() {
+        document.getElementById('phone-entry').style.display = 'block';
+        document.getElementById('code-entry').style.display = 'none';
+        document.getElementById('phone-form').reset();
+        document.getElementById('send-code-btn').disabled = false;
+        document.getElementById('send-code-btn').textContent = 'Send Verification Code';
+    }
+
+    async function resendCode() {
+        const resendButton = document.getElementById('resend-btn');
+        resendButton.disabled = true;
+        resendButton.textContent = 'Sending...';
+
+        try {
+            const formData = new FormData();
+            formData.append('phone_number', currentPhoneNumber);
+
+            const response = await fetch('/auth/sms/send', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Verification code resent successfully');
+                resendButton.disabled = false;
+                resendButton.textContent = 'Resend Code';
+            } else {
+                alert(data.detail || 'Failed to resend verification code');
+                resendButton.disabled = false;
+                resendButton.textContent = 'Resend Code';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            resendButton.disabled = false;
+            resendButton.textContent = 'Resend Code';
+        }
+    }
+
+    // Auto-submit when 6 digits are entered
+    document.getElementById('verification_code').addEventListener('input', (e) => {
+        const code = e.target.value;
+        if (code.length === 6 && /^\d{6}$/.test(code)) {
+            // Optional: auto-submit after a short delay
+            // setTimeout(() => e.target.form.submit(), 500);
+        }
+    });
+</script>
+{% endblock %}

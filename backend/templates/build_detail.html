@@ -1,0 +1,487 @@
+{% extends "base.html" %}
+
+{% block title %}{{ build['name'] }} - Auto Specs Manager{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/" class="btn">← Back to Builds</a>
+</div>
+
+<div class="card">
+    <h2>{{ build['name'] }}</h2>
+    {% if vehicle %}
+    <p><strong>Vehicle:</strong> {{ vehicle['year'] }} {{ vehicle['make'] }} {{ vehicle['model'] }} {{ vehicle['trim'] if vehicle['trim'] else '' }}</p>
+    {% endif %}
+    <p><strong>Owner:</strong> {{ build['first_name'] }} {{ build['last_name'] }} ({{ build['email'] }})</p>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab active" onclick="showTab('overview')">Overview</button>
+    <button class="tab" onclick="showTab('specs')">Engine Specs</button>
+    <button class="tab" onclick="showTab('drivetrain')">Drivetrain</button>
+    <button class="tab" onclick="showTab('parts')">Parts</button>
+    <button class="tab" onclick="showTab('tuning')">Tuning</button>
+    <button class="tab" onclick="showTab('performance')">Performance</button>
+    <button class="tab" onclick="showTab('maintenance')">Maintenance</button>
+</div>
+
+<!-- Overview Tab -->
+<div id="overview" class="tab-content active">
+    <div class="card">
+        <h3>Build Overview</h3>
+        <div class="spec-grid">
+            <div class="spec-item">
+                <div class="spec-label">Displacement</div>
+                <div class="spec-value">{{ build['displacement_ci'] }} CI</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Compression Ratio</div>
+                <div class="spec-value">{{ build['static_cr'] }}:1 ({{ build['dynamic_cr'] }}:1 DCR)</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Target Power</div>
+                <div class="spec-value">{{ build['target_hp'] if build['target_hp'] else 'N/A' }} HP / {{ build['target_torque'] if build['target_torque'] else 'N/A' }} lb-ft</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Rev Limit</div>
+                <div class="spec-value">{{ build['rev_limit_rpm'] if build['rev_limit_rpm'] else 'N/A' }} RPM</div>
+            </div>
+        </div>
+
+        {% if build['notes'] %}
+        <h4>Notes</h4>
+        <p>{{ build['notes'] }}</p>
+        {% endif %}
+    </div>
+
+    {% if vehicle %}
+    <div class="card">
+        <h3>Vehicle Information</h3>
+        <div class="spec-grid">
+            <div class="spec-item">
+                <div class="spec-label">Vehicle</div>
+                <div class="spec-value">{{ vehicle['year'] }} {{ vehicle['make'] }} {{ vehicle['model'] }}</div>
+            </div>
+            {% if vehicle['weight_with_fuel_lbs'] %}
+            <div class="spec-item">
+                <div class="spec-label">Weight (with fuel)</div>
+                <div class="spec-value">{{ vehicle['weight_with_fuel_lbs'] }} lbs</div>
+            </div>
+            {% endif %}
+            {% if vehicle['frame_type'] %}
+            <div class="spec-item">
+                <div class="spec-label">Frame Type</div>
+                <div class="spec-value">{{ vehicle['frame_type'] }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Engine Specs Tab -->
+<div id="specs" class="tab-content">
+    <div class="card">
+        <h3>Engine Specifications</h3>
+
+        <h4 style="margin-top: 1.5rem;">Basic Specs</h4>
+        <div class="spec-grid">
+            <div class="spec-item">
+                <div class="spec-label">Displacement</div>
+                <div class="spec-value">{{ build['displacement_ci'] }} CI</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Bore x Stroke</div>
+                <div class="spec-value">{{ build['bore_in'] }}" x {{ build['stroke_in'] }}"</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Rod Length</div>
+                <div class="spec-value">{{ build['rod_len_in'] }}"</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Deck Clearance</div>
+                <div class="spec-value">{{ build['deck_clear_in'] }}"</div>
+            </div>
+        </div>
+
+        <h4 style="margin-top: 1.5rem;">Compression</h4>
+        <div class="spec-grid">
+            <div class="spec-item">
+                <div class="spec-label">Piston Volume</div>
+                <div class="spec-value">{{ build['piston_cc'] }} cc</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Chamber Volume</div>
+                <div class="spec-value">{{ build['chamber_cc'] }} cc</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Head Gasket</div>
+                <div class="spec-value">{{ build['gasket_bore_in'] }}" bore x {{ build['gasket_thickness_in'] }}" thick</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Quench</div>
+                <div class="spec-value">{{ build['quench_in'] if build['quench_in'] else 'N/A' }}"</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Static CR</div>
+                <div class="spec-value">{{ build['static_cr'] }}:1</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Dynamic CR</div>
+                <div class="spec-value">{{ build['dynamic_cr'] }}:1</div>
+            </div>
+        </div>
+
+        {% if build['camshaft_model'] %}
+        <h4 style="margin-top: 1.5rem;">Camshaft</h4>
+        <div class="spec-grid">
+            <div class="spec-item">
+                <div class="spec-label">Model</div>
+                <div class="spec-value">{{ build['camshaft_model'] }}</div>
+            </div>
+            {% if build['camshaft_duration_int'] %}
+            <div class="spec-item">
+                <div class="spec-label">Duration @.050</div>
+                <div class="spec-value">{{ build['camshaft_duration_int'] }}/{{ build['camshaft_duration_exh'] }}</div>
+            </div>
+            {% endif %}
+            {% if build['camshaft_lift_int'] %}
+            <div class="spec-item">
+                <div class="spec-label">Lift</div>
+                <div class="spec-value">{{ build['camshaft_lift_int'] }}/{{ build['camshaft_lift_exh'] }}</div>
+            </div>
+            {% endif %}
+            {% if build['camshaft_lsa'] %}
+            <div class="spec-item">
+                <div class="spec-label">LSA</div>
+                <div class="spec-value">{{ build['camshaft_lsa'] }}°</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <h4 style="margin-top: 1.5rem;">Other</h4>
+        <div class="spec-grid">
+            <div class="spec-item">
+                <div class="spec-label">Balance</div>
+                <div class="spec-value">{{ build['balance_oz'] }} oz</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Flywheel Teeth</div>
+                <div class="spec-value">{{ build['flywheel_teeth'] }}</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Firing Order</div>
+                <div class="spec-value">{{ build['firing_order'] }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Drivetrain Tab -->
+<div id="drivetrain" class="tab-content">
+    {% if drivetrain %}
+    <div class="card">
+        <h3>Drivetrain Specifications</h3>
+
+        <h4 style="margin-top: 1rem;">Transmission</h4>
+        <div class="spec-grid">
+            {% if drivetrain['transmission_type'] %}
+            <div class="spec-item">
+                <div class="spec-label">Transmission</div>
+                <div class="spec-value">{{ drivetrain['transmission_type'] }}</div>
+            </div>
+            {% endif %}
+            {% if drivetrain['transmission_fluid_brand'] %}
+            <div class="spec-item">
+                <div class="spec-label">Fluid</div>
+                <div class="spec-value">{{ drivetrain['transmission_fluid_brand'] }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <h4 style="margin-top: 1.5rem;">Rear Differential</h4>
+        <div class="spec-grid">
+            {% if drivetrain['rear_gear_ratio'] %}
+            <div class="spec-item">
+                <div class="spec-label">Gear Ratio</div>
+                <div class="spec-value">{{ drivetrain['rear_gear_ratio'] }}</div>
+            </div>
+            {% endif %}
+            {% if drivetrain['rear_diff_type'] %}
+            <div class="spec-item">
+                <div class="spec-label">Differential Type</div>
+                <div class="spec-value">{{ drivetrain['rear_diff_type'] }}</div>
+            </div>
+            {% endif %}
+            {% if drivetrain['rear_diff_fluid_brand'] %}
+            <div class="spec-item">
+                <div class="spec-label">Fluid Brand</div>
+                <div class="spec-value">{{ drivetrain['rear_diff_fluid_brand'] }}</div>
+            </div>
+            {% endif %}
+            {% if drivetrain['rear_diff_fluid_type'] %}
+            <div class="spec-item">
+                <div class="spec-label">Fluid Type</div>
+                <div class="spec-value">{{ drivetrain['rear_diff_fluid_type'] }}</div>
+            </div>
+            {% endif %}
+            {% if drivetrain['rear_diff_friction_modifier'] %}
+            <div class="spec-item">
+                <div class="spec-label">Friction Modifier</div>
+                <div class="spec-value">{{ drivetrain['rear_diff_friction_modifier'] }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <p>No drivetrain information recorded yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Parts Tab -->
+<div id="parts" class="tab-content">
+    {% if engine_parts %}
+    <div class="card">
+        <h3>Engine Parts</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Part Name</th>
+                    <th>Brand</th>
+                    <th>Part Number</th>
+                    <th>Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for part in engine_parts %}
+                <tr>
+                    <td>{{ part['category'] }}</td>
+                    <td>{{ part['name'] }}</td>
+                    <td>{{ part['brand'] }}</td>
+                    <td>{{ part['part_number'] }}</td>
+                    <td>{{ part['role'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if vehicle_parts %}
+    <div class="card">
+        <h3>Vehicle Parts & Modifications</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Part Name</th>
+                    <th>Brand</th>
+                    <th>Location</th>
+                    <th>Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for part in vehicle_parts %}
+                <tr>
+                    <td>{{ part['category'] }}</td>
+                    <td>{{ part['name'] }}</td>
+                    <td>{{ part['brand'] }}</td>
+                    <td>{{ part['location'] if part['location'] else 'N/A' }}</td>
+                    <td>{{ part['timestamp'].split(' ')[0] if part['timestamp'] else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if not engine_parts and not vehicle_parts %}
+    <div class="card">
+        <p>No parts recorded yet.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Tuning Tab -->
+<div id="tuning" class="tab-content">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3>Current Tuning Settings</h3>
+            <a href="/build/{{ build['id'] }}/tuning/add" class="btn btn-success">+ Update Tuning</a>
+        </div>
+
+        {% if tuning %}
+        <p><em>Last updated: {{ tuning['timestamp'] }}</em></p>
+
+        <h4 style="margin-top: 1.5rem;">Carburetor</h4>
+        <div class="spec-grid">
+            {% if tuning['primary_jet_size'] %}
+            <div class="spec-item">
+                <div class="spec-label">Primary Jets</div>
+                <div class="spec-value">{{ tuning['primary_jet_size'] }}</div>
+            </div>
+            {% endif %}
+            {% if tuning['secondary_jet_size'] %}
+            <div class="spec-item">
+                <div class="spec-label">Secondary Jets</div>
+                <div class="spec-value">{{ tuning['secondary_jet_size'] }}</div>
+            </div>
+            {% endif %}
+            {% if tuning['power_valve_size'] %}
+            <div class="spec-item">
+                <div class="spec-label">Power Valve</div>
+                <div class="spec-value">{{ tuning['power_valve_size'] }}</div>
+            </div>
+            {% endif %}
+            {% if tuning['idle_mixture_turns'] %}
+            <div class="spec-item">
+                <div class="spec-label">Idle Mixture</div>
+                <div class="spec-value">{{ tuning['idle_mixture_turns'] }} turns out</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <h4 style="margin-top: 1.5rem;">Ignition</h4>
+        <div class="spec-grid">
+            {% if tuning['spark_plugs'] %}
+            <div class="spec-item">
+                <div class="spec-label">Spark Plugs</div>
+                <div class="spec-value">{{ tuning['spark_plugs'] }}</div>
+            </div>
+            {% endif %}
+            {% if tuning['initial_timing_deg'] %}
+            <div class="spec-item">
+                <div class="spec-label">Initial Timing</div>
+                <div class="spec-value">{{ tuning['initial_timing_deg'] }}°</div>
+            </div>
+            {% endif %}
+            {% if tuning['total_timing_deg'] %}
+            <div class="spec-item">
+                <div class="spec-label">Total Timing</div>
+                <div class="spec-value">{{ tuning['total_timing_deg'] }}°</div>
+            </div>
+            {% endif %}
+            {% if tuning['vacuum_advance_deg'] %}
+            <div class="spec-item">
+                <div class="spec-label">Vacuum Advance</div>
+                <div class="spec-value">{{ tuning['vacuum_advance_deg'] }}°</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <h4 style="margin-top: 1.5rem;">Vacuum Readings</h4>
+        <div class="spec-grid">
+            {% if tuning['idle_vacuum_inhg'] %}
+            <div class="spec-item">
+                <div class="spec-label">Idle Vacuum</div>
+                <div class="spec-value">{{ tuning['idle_vacuum_inhg'] }}" Hg</div>
+            </div>
+            {% endif %}
+            {% if tuning['cruise_vacuum_inhg'] %}
+            <div class="spec-item">
+                <div class="spec-label">Cruise Vacuum</div>
+                <div class="spec-value">{{ tuning['cruise_vacuum_inhg'] }}" Hg</div>
+            </div>
+            {% endif %}
+            {% if tuning['wot_vacuum_inhg'] %}
+            <div class="spec-item">
+                <div class="spec-label">WOT Vacuum</div>
+                <div class="spec-value">{{ tuning['wot_vacuum_inhg'] }}" Hg</div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if tuning['notes'] %}
+        <h4 style="margin-top: 1.5rem;">Notes</h4>
+        <p>{{ tuning['notes'] }}</p>
+        {% endif %}
+        {% else %}
+        <p>No tuning settings recorded yet. <a href="/build/{{ build['id'] }}/tuning/add">Add the first one!</a></p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Performance Tab -->
+<div id="performance" class="tab-content">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3>Performance Tests</h3>
+            <a href="/build/{{ build['id'] }}/performance/add" class="btn btn-success">+ Add Test</a>
+        </div>
+
+        {% if performance %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Location</th>
+                    <th>0-60</th>
+                    <th>1/4 Mile ET</th>
+                    <th>1/4 Mile MPH</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for test in performance %}
+                <tr>
+                    <td>{{ test['timestamp'].split(' ')[0] if test['timestamp'] else 'N/A' }}</td>
+                    <td>{{ test['test_location'] if test['test_location'] else 'N/A' }}</td>
+                    <td>{{ test['zero_to_60_sec'] if test['zero_to_60_sec'] else '-' }} sec</td>
+                    <td>{{ test['quarter_mile_et'] if test['quarter_mile_et'] else '-' }} sec</td>
+                    <td>{{ test['quarter_mile_mph'] if test['quarter_mile_mph'] else '-' }} mph</td>
+                    <td>{{ test['notes'] if test['notes'] else '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No performance tests recorded yet. <a href="/build/{{ build['id'] }}/performance/add">Add the first one!</a></p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Maintenance Tab -->
+<div id="maintenance" class="tab-content">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3>Maintenance History</h3>
+            <a href="/build/{{ build['id'] }}/maintenance/add" class="btn btn-success">+ Add Maintenance</a>
+        </div>
+
+        {% if maintenance %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Item</th>
+                    <th>Engine Hours</th>
+                    <th>Brand</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in maintenance %}
+                <tr>
+                    <td>{{ event['timestamp'].split(' ')[0] if event['timestamp'] else 'N/A' }}</td>
+                    <td>{{ event['maintenance_type'] }}</td>
+                    <td>{{ event['item_description'] }}</td>
+                    <td>{{ event['engine_hours'] if event['engine_hours'] else 'N/A' }}</td>
+                    <td>{{ event['brand'] if event['brand'] else '-' }}</td>
+                    <td>{{ event['notes'] if event['notes'] else '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No maintenance records yet. <a href="/build/{{ build['id'] }}/maintenance/add">Add the first one!</a></p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

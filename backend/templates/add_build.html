@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Build - Auto Specs Manager{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/" class="btn">← Back to Builds</a>
+</div>
+
+<div class="card">
+    <h2>Create New Engine Build</h2>
+    <p><em>Fill in what you know now. You can always add more details later!</em></p>
+
+    <form method="POST">
+        <h3>Basic Information</h3>
+        <div class="form-group">
+            <label for="user_id">Owner *</label>
+            <select name="user_id" id="user_id" required>
+                {% for user in users %}
+                <option value="{{ user['id'] }}">{{ user['first_name'] }} {{ user['last_name'] }} ({{ user['email'] }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Build Name *</label>
+            <input type="text" name="name" id="name" required
+                   placeholder="e.g., 351W 0.030 Over Project, Daily Driver 302">
+        </div>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="use_type">Intended Use</label>
+                <select name="use_type" id="use_type">
+                    <option value="">Select...</option>
+                    <option value="Street/Strip">Street/Strip</option>
+                    <option value="Daily Driver">Daily Driver</option>
+                    <option value="Race Only">Race Only</option>
+                    <option value="Weekend Cruiser">Weekend Cruiser</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="fuel_type">Fuel Type</label>
+                <input type="text" name="fuel_type" id="fuel_type" placeholder="e.g., 93 Octane, E85, Race Gas">
+            </div>
+        </div>
+
+        <h3>Target Performance (Optional)</h3>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="target_hp">Target Horsepower</label>
+                <input type="number" step="1" name="target_hp" id="target_hp" placeholder="e.g., 400">
+            </div>
+            <div class="form-group">
+                <label for="target_torque">Target Torque (lb-ft)</label>
+                <input type="number" step="1" name="target_torque" id="target_torque" placeholder="e.g., 380">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="rev_limit_rpm">Rev Limit (RPM)</label>
+            <input type="number" step="100" name="rev_limit_rpm" id="rev_limit_rpm" placeholder="e.g., 6200">
+        </div>
+
+        <h3>Engine Specifications (Optional)</h3>
+        <p><em>Leave blank if you don't know these yet</em></p>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="displacement_ci">Displacement (CI)</label>
+                <input type="number" step="0.1" name="displacement_ci" id="displacement_ci" placeholder="e.g., 351">
+            </div>
+            <div class="form-group">
+                <label for="firing_order">Firing Order</label>
+                <input type="text" name="firing_order" id="firing_order" placeholder="e.g., 1-3-7-2-6-5-4-8">
+            </div>
+        </div>
+
+        <h4>Bore & Stroke</h4>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="bore_in">Bore (inches)</label>
+                <input type="number" step="0.001" name="bore_in" id="bore_in" placeholder="e.g., 4.030">
+            </div>
+            <div class="form-group">
+                <label for="stroke_in">Stroke (inches)</label>
+                <input type="number" step="0.001" name="stroke_in" id="stroke_in" placeholder="e.g., 3.5">
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="rod_len_in">Rod Length (inches)</label>
+                <input type="number" step="0.001" name="rod_len_in" id="rod_len_in" placeholder="e.g., 5.4">
+            </div>
+            <div class="form-group">
+                <label for="deck_clear_in">Deck Clearance (inches)</label>
+                <input type="number" step="0.001" name="deck_clear_in" id="deck_clear_in" placeholder="e.g., 0.005">
+            </div>
+        </div>
+
+        <h4>Compression</h4>
+        <div class="two-col">
+            <div class="form-group">
+                <label for="piston_cc">Piston Volume (cc)</label>
+                <input type="number" step="0.1" name="piston_cc" id="piston_cc" placeholder="e.g., 5.0">
+            </div>
+            <div class="form-group">
+                <label for="chamber_cc">Chamber Volume (cc)</label>
+                <input type="number" step="0.1" name="chamber_cc" id="chamber_cc" placeholder="e.g., 53.0">
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="gasket_bore_in">Head Gasket Bore (inches)</label>
+                <input type="number" step="0.001" name="gasket_bore_in" id="gasket_bore_in" placeholder="e.g., 4.155">
+            </div>
+            <div class="form-group">
+                <label for="gasket_thickness_in">Head Gasket Thickness (inches)</label>
+                <input type="number" step="0.001" name="gasket_thickness_in" id="gasket_thickness_in" placeholder="e.g., 0.042">
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="quench_in">Quench (inches)</label>
+                <input type="number" step="0.001" name="quench_in" id="quench_in" placeholder="e.g., 0.047">
+            </div>
+            <div class="form-group">
+                <label for="static_cr">Static Compression Ratio</label>
+                <input type="number" step="0.1" name="static_cr" id="static_cr" placeholder="e.g., 11.5">
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="form-group">
+                <label for="dynamic_cr">Dynamic Compression Ratio</label>
+                <input type="number" step="0.1" name="dynamic_cr" id="dynamic_cr" placeholder="e.g., 8.8">
+            </div>
+            <div class="form-group">
+                <label for="balance_oz">Balance (oz)</label>
+                <input type="number" step="0.1" name="balance_oz" id="balance_oz" placeholder="e.g., 28.0">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="flywheel_teeth">Flywheel Teeth</label>
+            <input type="number" step="1" name="flywheel_teeth" id="flywheel_teeth" placeholder="e.g., 157, 164">
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea name="notes" id="notes" placeholder="Any additional information about this build..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success">Create Build</button>
+    </form>
+</div>
+{% endblock %}
