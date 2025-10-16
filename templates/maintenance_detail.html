@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance Event - {{ event['build_name'] }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1rem;">
+    <a href="/build/{{ event['build_id'] }}" class="btn">← Back to Build</a>
+</div>
+
+<div class="card">
+    <h2>Maintenance Event Details</h2>
+    <h3>{{ event['build_name'] }}</h3>
+
+    <table>
+        <tr><td><strong>Date</strong></td><td>{{ event['event_date'] }}</td></tr>
+        <tr><td><strong>Type</strong></td><td>{{ event['event_type'] }}</td></tr>
+        <tr><td><strong>Description</strong></td><td>{{ event['description'] }}</td></tr>
+        <tr><td><strong>Engine Hours</strong></td><td>{{ event['engine_hours'] if event['engine_hours'] else 'N/A' }}</td></tr>
+        <tr><td><strong>Odometer</strong></td><td>{{ event['odometer'] if event['odometer'] else 'N/A' }}</td></tr>
+    </table>
+
+    {% if event['notes'] %}
+    <h3>Notes</h3>
+    <p>{{ event['notes'] }}</p>
+    {% endif %}
+</div>
+
+{% if parts %}
+<div class="card">
+    <h3>Parts Used</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Part Number</th>
+                <th>Quantity</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for part in parts %}
+            <tr>
+                <td>{{ part['part_description'] }}</td>
+                <td>{{ part['part_number'] if part['part_number'] else 'N/A' }}</td>
+                <td>{{ part['qty'] }}</td>
+                <td>{{ part['notes'] if part['notes'] else '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

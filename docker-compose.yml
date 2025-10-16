@@ -1,0 +1,14 @@
+services:
+  web:
+    build:
+      context: .
+      network: host
+    network_mode: host
+    volumes:
+      # Mount database as volume so changes persist
+      - ./engine_build_normalized.db:/app/engine_build_normalized.db
+      # Mount templates for easy development
+      - ./templates:/app/templates
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
