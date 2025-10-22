@@ -1103,19 +1103,29 @@ export const BuildDetailPage: React.FC = () => {
           <h2>Build Summary</h2>
           <div className="summary-highlights">
             <div className="summary-card">
-              <div className="summary-label">Displacement</div>
+              <div className="summary-label">Vehicle</div>
+              <div className="summary-value">
+                {build.vehicle_year || build.vehicle_make || build.vehicle_model ? (
+                  <>
+                    {build.vehicle_year && <span>{build.vehicle_year} </span>}
+                    {build.vehicle_make && <span>{build.vehicle_make} </span>}
+                    {build.vehicle_model && <span>{build.vehicle_model}</span>}
+                  </>
+                ) : '—'}
+              </div>
+            </div>
+            <div className="summary-card">
+              <div className="summary-label">Engine</div>
               <div className="summary-value">{build.displacement_ci ? `${build.displacement_ci} ci` : '—'}</div>
             </div>
             <div className="summary-card">
-              <div className="summary-label">Target Power</div>
-              <div className="summary-value">{build.target_hp ? `${build.target_hp} hp` : '—'}</div>
+              <div className="summary-label">Transmission</div>
+              <div className="summary-value">
+                {build.transmission_model || build.transmission_type || '—'}
+              </div>
             </div>
             <div className="summary-card">
-              <div className="summary-label">Compression</div>
-              <div className="summary-value">{build.static_cr ? `${build.static_cr}:1` : '—'}</div>
-            </div>
-            <div className="summary-card">
-              <div className="summary-label">Total Investment</div>
+              <div className="summary-label">Total Cost</div>
               <div className="summary-value">
                 {(() => {
                   const engineTotal = (build.engine_parts || []).reduce((sum, part: any) =>
@@ -1123,7 +1133,7 @@ export const BuildDetailPage: React.FC = () => {
                   const vehicleTotal = (build.vehicle_parts || []).reduce((sum, part: any) =>
                     sum + (parseFloat(part.cost) || 0), 0);
                   const total = engineTotal + vehicleTotal;
-                  return total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—';
+                  return total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '$0.00';
                 })()}
               </div>
             </div>

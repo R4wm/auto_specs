@@ -15,6 +15,9 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - app-network
 
@@ -36,6 +39,9 @@ services:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - app-network
 
@@ -54,6 +60,9 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - app-network
 
