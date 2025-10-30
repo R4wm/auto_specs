@@ -5,6 +5,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { BuildsList } from './pages/BuildsList';
 import { BuildDetailPage } from './pages/BuildDetail';
+import { BuildEditPage } from './pages/BuildEditPage';
 import './App.css';
 
 function App() {
@@ -19,6 +20,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <BuildsList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/builds/:id/edit"
+            element={
+              <ProtectedRoute>
+                <BuildEditPage />
               </ProtectedRoute>
             }
           />

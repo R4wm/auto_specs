@@ -151,6 +151,86 @@ export interface BuildDetail extends Build {
   performance?: any[];
 }
 
+// Snapshot interfaces
+export interface Snapshot {
+  id: number;
+  build_id: number;
+  maintenance_id?: number;
+  snapshot_type: string;
+  change_description?: string;
+  user_id?: number;
+  created_at: string;
+  first_name?: string;
+  last_name?: string;
+  maintenance_type?: string;
+}
+
+export interface SnapshotDiff {
+  snapshot_before: {
+    id: number;
+    created_at: string;
+    snapshot_type: string;
+    change_description?: string;
+  };
+  snapshot_after: {
+    id: number;
+    created_at: string;
+    snapshot_type: string;
+    change_description?: string;
+  };
+  changes: {
+    [key: string]: {
+      before: any;
+      after: any;
+      has_changes: boolean;
+    };
+  };
+}
+
+// Subscription interfaces
+export interface SubscriptionStatus {
+  tier: 'default' | 'premier';
+  status: string;
+  builds_used: number;
+  builds_limit: number;
+  build_usage_percentage: number;
+  storage_used_bytes: number;
+  storage_used_mb: number;
+  storage_limit_bytes: number;
+  storage_limit_mb: number;
+  storage_usage_percentage: number;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+// Maintenance interfaces
+export interface MaintenanceRecord {
+  id: number;
+  build_id: number;
+  maintenance_type: string;
+  timestamp: string;
+  notes?: string;
+  odometer_miles?: number;
+  engine_hours?: number;
+  cost?: number;
+  brand?: string;
+  part_number?: string;
+  quantity?: number;
+}
+
+export interface MaintenanceAttachment {
+  id: number;
+  maintenance_id: number;
+  file_path: string;
+  file_name: string;
+  file_size_bytes: number;
+  file_type?: string;
+  description?: string;
+  uploaded_at: string;
+}
+
 // Auth API
 export const authAPI = {
   login: async (data: LoginRequest): Promise<TokenResponse> => {
@@ -188,6 +268,119 @@ export const buildsAPI = {
 
   create: async (data: Partial<Build>): Promise<Build> => {
     const response = await api.post('/api/builds', data);
+    return response.data;
+  },
+
+  // Component JSON updates
+  updateEngineInternals: async (id: number, data: any) => {
+    const response = await api.put(`/api/builds/${id}/engine-internals`, data);
+    return response.data;
+  },
+
+  updateSuspension: async (id: number, data: any) => {
+    const response = await api.put(`/api/builds/${id}/suspension`, data);
+    return response.data;
+  },
+
+  updateRearDifferential: async (id: number, data: any) => {
+    const response = await api.put(`/api/builds/${id}/rear-differential`, data);
+    return response.data;
+  },
+
+  updateTransmission: async (id: number, data: any) => {
+    const response = await api.put(`/api/builds/${id}/transmission`, data);
+    return response.data;
+  },
+
+  updateFrame: async (id: number, data: any) => {
+    const response = await api.put(`/api/builds/${id}/frame`, data);
+    return response.data;
+  },
+
+  updateCabInterior: async (id: number, data: any) => {
+    const response = await api.put(`/api/builds/${id}/cab-interior`, data);
+    return response.data;
+  },
+
+  updateTiresWheels: async (id: number, data: any) => {
+    const response = await api.put(`/api/builds/${id}/tires-wheels`, data);
+    return response.data;
+  },
+
+  // File upload
+  uploadComponentPhoto: async (id: number, componentType: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('component_type', componentType);
+    const response = await api.post(`/api/builds/${id}/upload-component-photo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+};
+
+// Snapshots API
+export const snapshotsAPI = {
+  getHistory: async (buildId: number): Promise<Snapshot[]> => {
+    const response = await api.get(`/api/builds/${buildId}/snapshots`);
+    return response.data;
+  },
+
+  getById: async (snapshotId: number): Promise<Snapshot> => {
+    const response = await api.get(`/api/snapshots/${snapshotId}`);
+    return response.data;
+  },
+
+  compareDiff: async (snapshotId: number, compareToId: number): Promise<SnapshotDiff> => {
+    const response = await api.get(`/api/snapshots/${snapshotId}/diff/${compareToId}`);
+    return response.data;
+  },
+
+  restore: async (buildId: number, snapshotId: number) => {
+    const response = await api.post(`/api/builds/${buildId}/restore/${snapshotId}`);
+    return response.data;
+  },
+};
+
+// Subscription API
+export const subscriptionAPI = {
+  getStatus: async (): Promise<SubscriptionStatus> => {
+    const response = await api.get('/api/subscription');
+    return response.data;
+  },
+
+  createCheckoutSession: async () => {
+    const response = await api.post('/api/subscription/checkout');
+    return response.data;
+  },
+
+  createPortalSession: async () => {
+    const response = await api.post('/api/subscription/portal');
+    return response.data;
+  },
+};
+
+// Maintenance API
+export const maintenanceAPI = {
+  create: async (buildId: number, data: Partial<MaintenanceRecord>) => {
+    const response = await api.post(`/api/builds/${buildId}/maintenance`, data);
+    return response.data;
+  },
+
+  uploadAttachment: async (maintenanceId: number, file: File, description?: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (description) {
+      formData.append('description', description);
+    }
+    const response = await api.post(`/api/maintenance/${maintenanceId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+
+  getAttachments: async (maintenanceId: number): Promise<MaintenanceAttachment[]> => {
+    const response = await api.get(`/api/maintenance/${maintenanceId}/attachments`);
     return response.data;
   },
 };

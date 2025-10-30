@@ -19,6 +19,9 @@ from auth import (
 from sms import send_verification_code, verify_code
 from db import get_db_cursor, row_to_dict
 
+# Import extended API routes
+from api_extensions import router as extensions_router
+
 # Load environment variables
 load_dotenv()
 
@@ -53,6 +56,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
+
+# Include additional API routes
+app.include_router(extensions_router)
 
 # Pydantic Models
 class LoginRequest(BaseModel):

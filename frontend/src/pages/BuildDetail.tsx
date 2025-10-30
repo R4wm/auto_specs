@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { buildsAPI } from '../services/api';
 import type { BuildDetail } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { MaintenanceRecordModal } from '../components/MaintenanceRecordModal';
 
 export const BuildDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,6 +11,7 @@ export const BuildDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [formData, setFormData] = useState({
     // Basic Info
     name: '',
@@ -1092,9 +1094,14 @@ export const BuildDetailPage: React.FC = () => {
           </Link>
           <h1>{build.name}</h1>
         </div>
-        <button onClick={handleLogout} className="btn btn-secondary">
-          Logout
-        </button>
+        <div className="header-actions">
+          <Link to={`/builds/${id}/edit`} className="btn btn-primary">
+            Edit Build
+          </Link>
+          <button onClick={handleLogout} className="btn btn-secondary">
+            Logout
+          </button>
+        </div>
       </header>
 
       <div className="build-detail">
@@ -1530,6 +1537,59 @@ export const BuildDetailPage: React.FC = () => {
           </section>
         )}
 
+        {/* Maintenance History */}
+        <section className="detail-section">
+          <div className="section-header">
+            <h2>Maintenance History</h2>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowMaintenanceModal(true)}
+            >
+              Add Maintenance Record
+            </button>
+          </div>
+
+          {build.maintenance && build.maintenance.length > 0 ? (
+            <div className="maintenance-list">
+              {build.maintenance.map((record: any, index: number) => (
+                <div key={index} className="maintenance-record">
+                  <div className="maintenance-header">
+                    <strong>{record.maintenance_type}</strong>
+                    <span className="maintenance-date">
+                      {new Date(record.timestamp).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="maintenance-details">
+                    {record.odometer_miles && (
+                      <span className="detail-item">Odometer: {record.odometer_miles.toLocaleString()} mi</span>
+                    )}
+                    {record.engine_hours && (
+                      <span className="detail-item">Engine Hours: {record.engine_hours}</span>
+                    )}
+                    {record.cost && (
+                      <span className="detail-item cost">Cost: ${record.cost.toFixed(2)}</span>
+                    )}
+                  </div>
+                  {record.brand && (
+                    <div className="maintenance-parts">
+                      Parts: {record.brand}
+                      {record.part_number && ` (${record.part_number})`}
+                      {record.quantity && ` × ${record.quantity}`}
+                    </div>
+                  )}
+                  {record.notes && (
+                    <div className="maintenance-notes">{record.notes}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>No maintenance records yet. Click "Add Maintenance Record" to track your first service.</p>
+            </div>
+          )}
+        </section>
+
         {/* Notes */}
         {build.notes && (
           <section className="detail-section">
@@ -1538,6 +1598,18 @@ export const BuildDetailPage: React.FC = () => {
           </section>
         )}
       </div>
+
+      {/* Maintenance Record Modal */}
+      {showMaintenanceModal && (
+        <MaintenanceRecordModal
+          buildId={parseInt(id!)}
+          onClose={() => setShowMaintenanceModal(false)}
+          onSuccess={() => {
+            // Reload build data to show new maintenance record
+            loadBuild(parseInt(id!));
+          }}
+        />
+      )}
     </div>
   );
 };
