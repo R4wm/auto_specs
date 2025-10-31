@@ -3,6 +3,7 @@ import { maintenanceAPI } from '../services/api';
 
 interface MaintenanceRecordModalProps {
   buildId: number;
+  editingRecord?: any;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -17,21 +18,30 @@ interface Part {
 
 export const MaintenanceRecordModal: React.FC<MaintenanceRecordModalProps> = ({
   buildId,
+  editingRecord,
   onClose,
   onSuccess
 }) => {
   const [formData, setFormData] = useState({
-    maintenance_type: '',
-    event_date: new Date().toISOString().split('T')[0],
-    notes: '',
-    odometer_miles: '',
-    engine_hours: '',
+    maintenance_type: editingRecord?.maintenance_type || '',
+    event_date: editingRecord?.timestamp ? new Date(editingRecord.timestamp).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    notes: editingRecord?.notes || '',
+    odometer_miles: editingRecord?.odometer_miles?.toString() || '',
+    engine_hours: editingRecord?.engine_hours?.toString() || '',
     labor_cost: ''
   });
 
-  const [parts, setParts] = useState<Part[]>([
-    { description: '', brand: '', part_number: '', quantity: '1', cost_per_unit: '' }
-  ]);
+  const [parts, setParts] = useState<Part[]>(
+    editingRecord && (editingRecord.brand || editingRecord.part_number || editingRecord.quantity)
+      ? [{
+          description: '',
+          brand: editingRecord.brand || '',
+          part_number: editingRecord.part_number || '',
+          quantity: editingRecord.quantity?.toString() || '1',
+          cost_per_unit: ''
+        }]
+      : [{ description: '', brand: '', part_number: '', quantity: '1', cost_per_unit: '' }]
+  );
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,7 +152,10 @@ export const MaintenanceRecordModal: React.FC<MaintenanceRecordModalProps> = ({
         quantity: validParts[0]?.quantity ? parseFloat(validParts[0].quantity) : undefined
       };
 
-      const response = await maintenanceAPI.create(buildId, maintenanceData);
+      // Use update if editing, create if new
+      const response = editingRecord
+        ? await maintenanceAPI.update(buildId, editingRecord.id, maintenanceData)
+        : await maintenanceAPI.create(buildId, maintenanceData);
 
       // Upload files if any were selected
       if (selectedFiles.length > 0 && response.id) {
@@ -165,12 +178,20 @@ export const MaintenanceRecordModal: React.FC<MaintenanceRecordModalProps> = ({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Add Maintenance Record</h2>
+          <h2>{editingRecord ? 'Edit Maintenance Record' : 'Add Maintenance Record'}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
         {error && (
           <div className="alert alert-error">{error}</div>
+        )}
+
+        {editingRecord && (
+          <div className="edit-info-banner">
+            <strong>Editing Record:</strong> {editingRecord.maintenance_type} from {new Date(editingRecord.timestamp).toLocaleDateString()}
+            <br />
+            <small>Changes will be saved and a revision history will be created</small>
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="maintenance-form">
@@ -360,7 +381,7 @@ export const MaintenanceRecordModal: React.FC<MaintenanceRecordModalProps> = ({
 
           <div className="form-actions">
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Maintenance Record'}
+              {isSubmitting ? 'Saving...' : editingRecord ? 'Update Record' : 'Save Maintenance Record'}
             </button>
             <button type="button" className="btn btn-secondary" onClick={onClose} disabled={isSubmitting}>
               Cancel

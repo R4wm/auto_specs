@@ -14,6 +14,7 @@ from auth import (
     verify_password,
     create_access_token,
     get_current_user,
+    get_current_user_optional,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from sms import send_verification_code, verify_code
@@ -21,6 +22,7 @@ from db import get_db_cursor, row_to_dict
 
 # Import extended API routes
 from api_extensions import router as extensions_router
+from todo_api import router as todo_router
 
 # Load environment variables
 load_dotenv()
@@ -59,6 +61,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # Include additional API routes
 app.include_router(extensions_router)
+app.include_router(todo_router)
 
 # Pydantic Models
 class LoginRequest(BaseModel):
@@ -401,23 +404,38 @@ async def get_builds(current_user: dict = Depends(get_current_user)):
 
     return [row_to_dict(build) for build in builds]
 
-@app.get("/api/builds/{build_id}")
-async def get_build(build_id: int, current_user: dict = Depends(get_current_user)):
-    """Get a specific build with all related data"""
+@app.get("/api/builds/{build_identifier}")
+async def get_build(build_identifier: str, request: Request, current_user: Optional[dict] = Depends(get_current_user_optional)):
+    """Get a specific build with all related data (public read access)
+
+    Args:
+        build_identifier: Can be either a slug (e.g., 'abc123-my-build') or numeric ID (for backwards compatibility)
+    """
     with get_db_cursor() as cursor:
-        # Get build with user info
-        cursor.execute('''
-            SELECT b.*, u.first_name, u.last_name, u.email
-            FROM builds b
-            JOIN users u ON b.user_id = u.id
-            WHERE b.id = %s
-        ''', (build_id,))
+        # Determine if identifier is a slug or ID
+        if build_identifier.isdigit():
+            # Backwards compatibility: numeric ID
+            cursor.execute('''
+                SELECT b.*, u.first_name, u.last_name, u.email
+                FROM builds b
+                JOIN users u ON b.user_id = u.id
+                WHERE b.id = %s
+            ''', (int(build_identifier),))
+        else:
+            # Modern approach: slug lookup
+            cursor.execute('''
+                SELECT b.*, u.first_name, u.last_name, u.email
+                FROM builds b
+                JOIN users u ON b.user_id = u.id
+                WHERE b.slug = %s
+            ''', (build_identifier,))
         build = cursor.fetchone()
 
         if not build:
             raise HTTPException(status_code=404, detail="Build not found")
 
         build_dict = row_to_dict(build)
+        build_id = build_dict['id']  # Get the actual build ID for related queries
 
         # Get related data
         cursor.execute('''
@@ -479,8 +497,12 @@ async def get_build(build_id: int, current_user: dict = Depends(get_current_user
         ''', (build_id,))
         performance = cursor.fetchall()
 
+    # Check if current user is the owner
+    is_owner = current_user is not None and current_user.get('id') == build_dict.get('user_id')
+
     return {
         **build_dict,
+        "is_owner": is_owner,
         "vehicle": row_to_dict(vehicle),
         "drivetrain": row_to_dict(drivetrain),
         "engine_parts": [row_to_dict(part) for part in engine_parts],
@@ -493,46 +515,40 @@ async def get_build(build_id: int, current_user: dict = Depends(get_current_user
 @app.post("/api/builds")
 async def create_build(build: BuildCreate, current_user: dict = Depends(get_current_user)):
     """Create a new build"""
+    import secrets
+    import re
+
+    # Generate unique slug
+    random_hash = secrets.token_urlsafe(12)  # 12 bytes = ~16 URL-safe chars
+    build_name = build.name or "build"
+
+    # Sanitize name for URL (keep alphanumeric and hyphens)
+    sanitized_name = re.sub(r'[^a-zA-Z0-9\s-]', '', build_name)
+    sanitized_name = re.sub(r'\s+', '-', sanitized_name).lower()
+    sanitized_name = sanitized_name[:50]  # Limit length
+
+    slug = f"{random_hash}-{sanitized_name}" if sanitized_name else random_hash
+
     with get_db_cursor() as cursor:
         cursor.execute('''
             INSERT INTO builds (
-                user_id, name, use_type, fuel_type, target_hp, target_torque, rev_limit_rpm,
+                user_id, name, slug, use_type, fuel_type, target_hp, target_torque, rev_limit_rpm,
                 displacement_ci, bore_in, stroke_in, rod_len_in, deck_clear_in,
                 piston_cc, chamber_cc, gasket_bore_in, gasket_thickness_in, quench_in,
                 static_cr, dynamic_cr, balance_oz, flywheel_teeth, firing_order,
                 camshaft_model, camshaft_duration_int, camshaft_duration_exh,
                 camshaft_lift_int, camshaft_lift_exh, camshaft_lsa,
-                ring_gap_top_in, ring_gap_second_in, ring_gap_oil_in,
-                cam_bearing_clearance_in,
-                vehicle_year, vehicle_make, vehicle_model, vehicle_trim, vin, vehicle_weight_lbs,
-                transmission_type, transmission_model, transmission_gears, final_drive_ratio,
-                suspension_front, suspension_rear, spring_rate_front, spring_rate_rear,
-                sway_bar_front, sway_bar_rear,
-                tire_size_front, tire_size_rear, tire_brand, tire_model,
-                wheel_size_front, wheel_size_rear,
-                engine_oil_type, engine_oil_weight, engine_oil_capacity,
-                transmission_fluid_type, differential_fluid_type, coolant_type,
                 notes
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         ''', (
-            current_user['id'], build.name, build.use_type, build.fuel_type,
+            current_user['id'], build.name, slug, build.use_type, build.fuel_type,
             build.target_hp, build.target_torque, build.rev_limit_rpm,
             build.displacement_ci, build.bore_in, build.stroke_in, build.rod_len_in, build.deck_clear_in,
             build.piston_cc, build.chamber_cc, build.gasket_bore_in, build.gasket_thickness_in, build.quench_in,
             build.static_cr, build.dynamic_cr, build.balance_oz, build.flywheel_teeth, build.firing_order,
             build.camshaft_model, build.camshaft_duration_int, build.camshaft_duration_exh,
             build.camshaft_lift_int, build.camshaft_lift_exh, build.camshaft_lsa,
-            build.ring_gap_top_in, build.ring_gap_second_in, build.ring_gap_oil_in,
-            build.cam_bearing_clearance_in,
-            build.vehicle_year, build.vehicle_make, build.vehicle_model, build.vehicle_trim, build.vin, build.vehicle_weight_lbs,
-            build.transmission_type, build.transmission_model, build.transmission_gears, build.final_drive_ratio,
-            build.suspension_front, build.suspension_rear, build.spring_rate_front, build.spring_rate_rear,
-            build.sway_bar_front, build.sway_bar_rear,
-            build.tire_size_front, build.tire_size_rear, build.tire_brand, build.tire_model,
-            build.wheel_size_front, build.wheel_size_rear,
-            build.engine_oil_type, build.engine_oil_weight, build.engine_oil_capacity,
-            build.transmission_fluid_type, build.differential_fluid_type, build.coolant_type,
             build.notes
         ))
 
@@ -543,6 +559,122 @@ async def create_build(build: BuildCreate, current_user: dict = Depends(get_curr
         created_build = cursor.fetchone()
 
     return row_to_dict(created_build)
+
+@app.patch("/api/builds/{build_identifier}")
+async def update_build_partial(
+    build_identifier: str,
+    changes: Dict[str, Any],
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Partially update a build with field-level change tracking.
+
+    Accepts only the fields being changed (not the entire build object).
+    Logs each field change to the event log for revision history.
+
+    Example request:
+    {
+        "name": "New Build Name",
+        "use_type": "Street/Strip",
+        "engine_internals_json": {"block": {"bore_size": 4.030}}
+    }
+    """
+    import uuid
+    from event_logger import log_changes_batch
+
+    # Get build ID from identifier
+    with get_db_cursor() as cursor:
+        if build_identifier.isdigit():
+            cursor.execute("SELECT id, user_id FROM builds WHERE id = %s", (int(build_identifier),))
+        else:
+            cursor.execute("SELECT id, user_id FROM builds WHERE slug = %s", (build_identifier,))
+
+        build = cursor.fetchone()
+        if not build:
+            raise HTTPException(status_code=404, detail="Build not found")
+
+        build_id = build['id']
+
+        # Check ownership
+        if build['user_id'] != current_user['id']:
+            raise HTTPException(status_code=403, detail="Not authorized to edit this build")
+
+        # Get current build state for comparison
+        cursor.execute("SELECT * FROM builds WHERE id = %s", (build_id,))
+        current_build = row_to_dict(cursor.fetchone())
+
+    # Separate table columns from JSONB columns
+    table_updates = {}
+    json_updates = {}
+    change_log = {}  # For event logging
+
+    for field, new_value in changes.items():
+        if field.endswith('_json'):
+            # JSONB column - need to deep merge
+            old_value = current_build.get(field) or {}
+            # For now, simple replacement (TODO: deep merge in future)
+            json_updates[field] = new_value
+            change_log[field] = (old_value, new_value)
+        else:
+            # Regular table column
+            old_value = current_build.get(field)
+            if old_value != new_value:
+                table_updates[field] = new_value
+                change_log[field] = (old_value, new_value)
+
+    if not table_updates and not json_updates:
+        return {"message": "No changes detected", "build": current_build}
+
+    # Apply updates to database
+    with get_db_cursor() as cursor:
+        # Update table columns
+        if table_updates:
+            set_clauses = [f"{field} = %s" for field in table_updates.keys()]
+            values = list(table_updates.values()) + [build_id, current_user['id']]
+
+            cursor.execute(f"""
+                UPDATE builds
+                SET {', '.join(set_clauses)}
+                WHERE id = %s AND user_id = %s
+            """, values)
+
+        # Update JSONB columns
+        for json_field, json_value in json_updates.items():
+            cursor.execute(f"""
+                UPDATE builds
+                SET {json_field} = %s
+                WHERE id = %s AND user_id = %s
+            """, (json.dumps(json_value), build_id, current_user['id']))
+
+    # Log changes to event log
+    change_description = f"Updated {len(change_log)} field(s)"
+    if 'name' in change_log:
+        change_description = f"Updated build: {changes['name']}"
+
+    ip_address = request.client.host if request.client else None
+    user_agent = request.headers.get('user-agent')
+
+    batch_id = log_changes_batch(
+        build_id=build_id,
+        user_id=current_user['id'],
+        changes=change_log,
+        change_description=change_description,
+        ip_address=ip_address,
+        user_agent=user_agent
+    )
+
+    # Fetch updated build
+    with get_db_cursor() as cursor:
+        cursor.execute("SELECT * FROM builds WHERE id = %s", (build_id,))
+        updated_build = cursor.fetchone()
+
+    return {
+        "success": True,
+        "message": f"Successfully updated {len(change_log)} field(s)",
+        "batch_id": batch_id,
+        "build": row_to_dict(updated_build)
+    }
 
 # Health check endpoint
 @app.get("/api/health")

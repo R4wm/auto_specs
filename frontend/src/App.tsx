@@ -33,11 +33,7 @@ function App() {
           />
           <Route
             path="/builds/:id"
-            element={
-              <ProtectedRoute>
-                <BuildDetailPage />
-              </ProtectedRoute>
-            }
+            element={<BuildDetailPage />}
           />
           <Route path="/" element={<Navigate to="/builds" replace />} />
         </Routes>

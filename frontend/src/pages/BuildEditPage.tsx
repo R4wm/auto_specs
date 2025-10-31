@@ -34,7 +34,7 @@ export const BuildEditPage: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      loadBuild(parseInt(id));
+      loadBuild(id);
     }
   }, [id]);
 
@@ -51,9 +51,9 @@ export const BuildEditPage: React.FC = () => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  const loadBuild = async (buildId: number) => {
+  const loadBuild = async (buildIdentifier: string) => {
     try {
-      const data = await buildsAPI.getById(buildId);
+      const data = await buildsAPI.getById(buildIdentifier);
       setBuild(data);
     } catch (err: any) {
       setError('Failed to load build');
@@ -132,8 +132,8 @@ export const BuildEditPage: React.FC = () => {
     return (
       <div className="container">
         <div className="alert alert-error">{error}</div>
-        <Link to={`/builds/${id}`} className="btn">
-          Back to Build
+        <Link to="/builds" className="btn">
+          Back to Builds
         </Link>
       </div>
     );
@@ -155,7 +155,7 @@ export const BuildEditPage: React.FC = () => {
       {/* Header */}
       <header className="page-header">
         <div>
-          <Link to={`/builds/${id}`} className="back-link">
+          <Link to={`/builds/${build.slug}`} className="back-link">
             ← Back to Build
           </Link>
           <h1>Edit: {build.name}</h1>

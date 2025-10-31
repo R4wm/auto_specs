@@ -717,3 +717,439 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Enhanced Maintenance Record Styles */
+.maintenance-record {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.maintenance-record:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.maintenance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.maintenance-header strong {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.maintenance-date {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.maintenance-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.maintenance-details .detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.maintenance-details .detail-item strong {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.maintenance-parts {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--bg-color);
+  border-radius: 6px;
+}
+
+.maintenance-parts strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.parts-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.parts-details span {
+  color: var(--text-primary);
+}
+
+.maintenance-notes {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--bg-color);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 4px;
+}
+
+.maintenance-notes strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.maintenance-notes p {
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.maintenance-footer {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+  text-align: right;
+}
+
+.maintenance-footer small {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Edit Info Banner */
+.edit-info-banner {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  color: #92400e;
+}
+
+.edit-info-banner strong {
+  color: #78350f;
+}
+
+.edit-info-banner small {
+  color: #92400e;
+  font-style: italic;
+}
+
+/* Read-Only Banner */
+.read-only-banner {
+  background: #dbeafe;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: #1e40af;
+}
+
+.read-only-banner strong {
+  color: #1e3a8a;
+  font-size: 1rem;
+}
+
+.read-only-banner span {
+  font-size: 0.9rem;
+  color: #1e40af;
+}
+
+/* Component Notes Styles */
+.component-notes-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.component-notes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.component-notes-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+}
+
+.btn-add-note {
+  padding: 0.5rem 1rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-add-note:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btn-add-note:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.component-notes-loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.note-form {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--input-background);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.note-form textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  background: var(--card-background);
+  color: var(--text-primary);
+}
+
+.note-form textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.note-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.btn-primary {
+  padding: 0.5rem 1.25rem;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1.25rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--hover-background);
+  border-color: var(--text-secondary);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.no-notes {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  background: var(--input-background);
+  border-radius: 6px;
+}
+
+.note-item {
+  padding: 1rem;
+  background: var(--input-background);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.note-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.note-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
+.note-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.note-author {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.note-date {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.note-edited {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+.note-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-icon {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: var(--hover-background);
+  border-color: var(--text-secondary);
+}
+
+.btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-edit:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-delete:hover:not(:disabled) {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: #fee;
+}
+
+.btn-save:hover:not(:disabled) {
+  border-color: #16a34a;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: #fee;
+}
+
+.note-content {
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.note-content p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.note-edit-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+  background: var(--card-background);
+  color: var(--text-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.note-edit-textarea:focus {
+  outline: none;
+}
+
+.error-banner {
+  padding: 0.75rem 1rem;
+  background: #fee;
+  border: 1px solid #dc2626;
+  border-radius: 4px;
+  color: #dc2626;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}

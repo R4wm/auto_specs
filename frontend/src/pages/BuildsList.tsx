@@ -67,7 +67,7 @@ export const BuildsList: React.FC = () => {
       ) : (
         <div className="builds-grid">
           {builds.map((build) => (
-            <Link to={`/builds/${build.id}`} key={build.id} className="build-card">
+            <Link to={`/builds/${build.slug}`} key={build.id} className="build-card">
               <h3>{build.name}</h3>
               <div className="build-info">
                 {build.displacement_ci && (

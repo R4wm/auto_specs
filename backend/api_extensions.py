@@ -10,7 +10,7 @@ import json
 import shutil
 from pathlib import Path
 
-from auth import get_current_user
+from auth import get_current_user, get_current_user_optional
 from db import get_db_cursor, row_to_dict
 from snapshot_utils import (
     create_snapshot,
@@ -468,14 +468,13 @@ async def create_maintenance_record(
             cursor.execute("""
                 INSERT INTO build_maintenance
                 (build_id, maintenance_type, timestamp, notes, odometer_miles,
-                 engine_hours, brand, part_number, quantity, cost)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 engine_hours, brand, part_number, quantity)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (
                 build_id, maintenance.maintenance_type, maintenance.event_date,
                 maintenance.notes, maintenance.odometer_miles, maintenance.engine_hours,
-                maintenance.brand, maintenance.part_number, maintenance.quantity,
-                maintenance.cost
+                maintenance.brand, maintenance.part_number, maintenance.quantity
             ))
 
             maintenance_id = cursor.fetchone()['id']
@@ -499,6 +498,75 @@ async def create_maintenance_record(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create maintenance record: {str(e)}")
+
+
+@router.put("/api/builds/{build_id}/maintenance/{maintenance_id}")
+async def update_maintenance_record(
+    build_id: int,
+    maintenance_id: int,
+    maintenance: MaintenanceRecordCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update maintenance record and create revision snapshot"""
+    try:
+        # Create "before edit" snapshot
+        snapshot_before = create_snapshot(
+            build_id,
+            current_user['id'],
+            'before_maintenance_edit',
+            f'Before editing {maintenance.maintenance_type}'
+        )
+
+        with get_db_cursor() as cursor:
+            # Update maintenance record
+            cursor.execute("""
+                UPDATE build_maintenance
+                SET maintenance_type = %s,
+                    timestamp = %s,
+                    notes = %s,
+                    odometer_miles = %s,
+                    engine_hours = %s,
+                    brand = %s,
+                    part_number = %s,
+                    quantity = %s
+                WHERE id = %s AND build_id = %s
+            """, (
+                maintenance.maintenance_type,
+                maintenance.event_date,
+                maintenance.notes,
+                maintenance.odometer_miles,
+                maintenance.engine_hours,
+                maintenance.brand,
+                maintenance.part_number,
+                maintenance.quantity,
+                maintenance_id,
+                build_id
+            ))
+
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Maintenance record not found")
+
+        # Create "after edit" snapshot
+        snapshot_after = create_snapshot(
+            build_id,
+            current_user['id'],
+            'maintenance_edit',
+            f'{maintenance.maintenance_type} updated',
+            maintenance_id
+        )
+
+        return {
+            'success': True,
+            'id': maintenance_id,
+            'snapshot_before': snapshot_before,
+            'snapshot_after': snapshot_after,
+            'message': 'Maintenance record updated'
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update maintenance record: {str(e)}")
 
 
 @router.post("/api/maintenance/{maintenance_id}/attachments")
@@ -584,5 +652,276 @@ async def get_maintenance_attachments(
 
         return [row_to_dict(att) for att in attachments]
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============= Component Notes Endpoints =============
+
+class ComponentNoteCreate(BaseModel):
+    content: str
+
+class ComponentNoteUpdate(BaseModel):
+    content: str
+
+
+# Map component names to database columns
+COMPONENT_COLUMN_MAP = {
+    'engine-internals': 'engine_internals_json',
+    'suspension': 'suspension_json',
+    'tires-wheels': 'tires_wheels_json',
+    'rear-differential': 'rear_differential_json',
+    'transmission': 'transmission_json',
+    'frame': 'frame_json',
+    'cab-interior': 'cab_interior_json',
+    'brakes': 'brakes_json',
+    'additional-components': 'additional_components_json'
+}
+
+
+def get_component_data(build_id: int, component: str, user_id: int) -> dict:
+    """Helper to fetch component JSON data from database"""
+    column = COMPONENT_COLUMN_MAP.get(component)
+    if not column:
+        raise ValueError(f"Invalid component: {component}")
+
+    with get_db_cursor() as cursor:
+        cursor.execute(f"""
+            SELECT {column}, user_id
+            FROM builds
+            WHERE id = %s
+        """, (build_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            raise ValueError("Build not found")
+
+        # Check ownership
+        if result['user_id'] != user_id:
+            raise ValueError("Not authorized")
+
+        data = result[column] or {}
+        return data
+
+
+def update_component_data(build_id: int, component: str, user_id: int, data: dict):
+    """Helper to update component JSON data in database"""
+    column = COMPONENT_COLUMN_MAP.get(component)
+    if not column:
+        raise ValueError(f"Invalid component: {component}")
+
+    with get_db_cursor() as cursor:
+        cursor.execute(f"""
+            UPDATE builds
+            SET {column} = %s
+            WHERE id = %s AND user_id = %s
+        """, (json.dumps(data), build_id, user_id))
+
+
+@router.post("/api/builds/{build_id}/{component}/notes")
+async def add_component_note(
+    build_id: int,
+    component: str,
+    note_data: ComponentNoteCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Add a note to a component with audit trail"""
+    try:
+        # Validate component name
+        if component not in COMPONENT_COLUMN_MAP:
+            raise HTTPException(status_code=400, detail=f"Invalid component: {component}")
+
+        # Create "before" snapshot
+        create_snapshot(build_id, current_user['id'], 'before_change', f'Before adding note to {component}')
+
+        # Get current component data
+        data = get_component_data(build_id, component, current_user['id'])
+
+        # Initialize notes_array if it doesn't exist
+        if 'notes_array' not in data:
+            data['notes_array'] = []
+
+        # Create new note
+        timestamp = datetime.utcnow().isoformat() + 'Z'
+        note_id = f"note_{int(datetime.utcnow().timestamp() * 1000)}"
+
+        new_note = {
+            'id': note_id,
+            'timestamp': timestamp,
+            'user_id': current_user['id'],
+            'user_name': f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}".strip() or current_user.get('email', 'Unknown'),
+            'content': note_data.content,
+            'action_type': 'add'
+        }
+
+        # Add note to array
+        data['notes_array'].append(new_note)
+
+        # Update database
+        update_component_data(build_id, component, current_user['id'], data)
+
+        # Create "after" snapshot
+        create_snapshot(build_id, current_user['id'], 'note_add', f'Added note to {component}')
+
+        return {
+            'success': True,
+            'note': new_note,
+            'message': 'Note added successfully'
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/api/builds/{build_id}/{component}/notes/{note_id}")
+async def update_component_note(
+    build_id: int,
+    component: str,
+    note_id: str,
+    note_data: ComponentNoteUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Edit a note in a component with audit trail"""
+    try:
+        # Validate component name
+        if component not in COMPONENT_COLUMN_MAP:
+            raise HTTPException(status_code=400, detail=f"Invalid component: {component}")
+
+        # Create "before" snapshot
+        create_snapshot(build_id, current_user['id'], 'before_change', f'Before editing note in {component}')
+
+        # Get current component data
+        data = get_component_data(build_id, component, current_user['id'])
+
+        # Find and update the note
+        if 'notes_array' not in data:
+            raise HTTPException(status_code=404, detail="No notes found")
+
+        note_found = False
+        for note in data['notes_array']:
+            if note['id'] == note_id:
+                # Check if user owns the note
+                if note['user_id'] != current_user['id']:
+                    raise HTTPException(status_code=403, detail="Not authorized to edit this note")
+
+                # Update note content and metadata
+                note['content'] = note_data.content
+                note['last_edited'] = datetime.utcnow().isoformat() + 'Z'
+                note['action_type'] = 'edit'
+                note_found = True
+                updated_note = note
+                break
+
+        if not note_found:
+            raise HTTPException(status_code=404, detail="Note not found")
+
+        # Update database
+        update_component_data(build_id, component, current_user['id'], data)
+
+        # Create "after" snapshot
+        create_snapshot(build_id, current_user['id'], 'note_edit', f'Edited note in {component}')
+
+        return {
+            'success': True,
+            'note': updated_note,
+            'message': 'Note updated successfully'
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/api/builds/{build_id}/{component}/notes/{note_id}")
+async def delete_component_note(
+    build_id: int,
+    component: str,
+    note_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a note from a component with audit trail"""
+    try:
+        # Validate component name
+        if component not in COMPONENT_COLUMN_MAP:
+            raise HTTPException(status_code=400, detail=f"Invalid component: {component}")
+
+        # Create "before" snapshot
+        create_snapshot(build_id, current_user['id'], 'before_change', f'Before deleting note from {component}')
+
+        # Get current component data
+        data = get_component_data(build_id, component, current_user['id'])
+
+        # Find and remove the note
+        if 'notes_array' not in data:
+            raise HTTPException(status_code=404, detail="No notes found")
+
+        original_length = len(data['notes_array'])
+        data['notes_array'] = [
+            note for note in data['notes_array']
+            if not (note['id'] == note_id and note['user_id'] == current_user['id'])
+        ]
+
+        if len(data['notes_array']) == original_length:
+            raise HTTPException(status_code=404, detail="Note not found or not authorized")
+
+        # Update database
+        update_component_data(build_id, component, current_user['id'], data)
+
+        # Create "after" snapshot
+        create_snapshot(build_id, current_user['id'], 'note_delete', f'Deleted note from {component}')
+
+        return {
+            'success': True,
+            'message': 'Note deleted successfully'
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/builds/{build_id}/{component}/notes")
+async def get_component_notes(
+    build_id: int,
+    component: str,
+    current_user: Optional[dict] = Depends(get_current_user)
+):
+    """Get all notes for a component (public read access)"""
+    try:
+        # Validate component name
+        if component not in COMPONENT_COLUMN_MAP:
+            raise HTTPException(status_code=400, detail=f"Invalid component: {component}")
+
+        column = COMPONENT_COLUMN_MAP[component]
+
+        with get_db_cursor() as cursor:
+            cursor.execute(f"""
+                SELECT {column}
+                FROM builds
+                WHERE id = %s
+            """, (build_id,))
+            result = cursor.fetchone()
+
+            if not result:
+                raise HTTPException(status_code=404, detail="Build not found")
+
+            data = result[column] or {}
+            notes = data.get('notes_array', [])
+
+            return {
+                'success': True,
+                'notes': notes
+            }
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

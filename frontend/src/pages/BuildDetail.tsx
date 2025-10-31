@@ -4,6 +4,7 @@ import { buildsAPI } from '../services/api';
 import type { BuildDetail } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { MaintenanceRecordModal } from '../components/MaintenanceRecordModal';
+import { ComponentNotes } from '../components/ComponentNotes';
 
 export const BuildDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,7 @@ export const BuildDetailPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [editingMaintenance, setEditingMaintenance] = useState<any>(null);
   const [formData, setFormData] = useState({
     // Basic Info
     name: '',
@@ -95,7 +97,7 @@ export const BuildDetailPage: React.FC = () => {
     differential_fluid_type: '',
     coolant_type: ''
   });
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -103,13 +105,13 @@ export const BuildDetailPage: React.FC = () => {
       setIsCreating(true);
       setLoading(false);
     } else if (id) {
-      loadBuild(parseInt(id));
+      loadBuild(id);
     }
   }, [id]);
 
-  const loadBuild = async (buildId: number) => {
+  const loadBuild = async (buildIdentifier: string) => {
     try {
-      const data = await buildsAPI.getById(buildId);
+      const data = await buildsAPI.getById(buildIdentifier);
       setBuild(data);
     } catch (err: any) {
       setError('Failed to load build details');
@@ -224,6 +226,11 @@ export const BuildDetailPage: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleEditMaintenance = (record: any) => {
+    setEditingMaintenance(record);
+    setShowMaintenanceModal(true);
   };
 
   if (loading) {
@@ -1095,14 +1102,30 @@ export const BuildDetailPage: React.FC = () => {
           <h1>{build.name}</h1>
         </div>
         <div className="header-actions">
-          <Link to={`/builds/${id}/edit`} className="btn btn-primary">
-            Edit Build
-          </Link>
-          <button onClick={handleLogout} className="btn btn-secondary">
-            Logout
-          </button>
+          {build.is_owner && (
+            <Link to={`/builds/${build.slug}/edit`} className="btn btn-primary">
+              Edit Build
+            </Link>
+          )}
+          {user && (
+            <button onClick={handleLogout} className="btn btn-secondary">
+              Logout
+            </button>
+          )}
+          {!user && (
+            <Link to="/login" className="btn btn-primary">
+              Login
+            </Link>
+          )}
         </div>
       </header>
+
+      {!build.is_owner && (
+        <div className="read-only-banner">
+          <strong>Viewing shared build</strong>
+          <span>You're viewing {build.first_name}'s build. {user ? 'You can view but not edit this build.' : 'Login to create your own builds.'}</span>
+        </div>
+      )}
 
       <div className="build-detail">
         {/* Build Summary */}
@@ -1300,6 +1323,14 @@ export const BuildDetailPage: React.FC = () => {
               <span className="spec-value">{build.cam_bearing_clearance_in ? `${build.cam_bearing_clearance_in} in` : '—'}</span>
             </div>
           </div>
+
+          {/* Engine Notes */}
+          <ComponentNotes
+            buildId={build.id}
+            component="engine-internals"
+            componentTitle="Engine"
+            isOwner={build.is_owner}
+          />
         </section>
 
         {/* Vehicle Information */}
@@ -1354,6 +1385,14 @@ export const BuildDetailPage: React.FC = () => {
               <span className="spec-value">{build.final_drive_ratio || '—'}</span>
             </div>
           </div>
+
+          {/* Transmission Notes */}
+          <ComponentNotes
+            buildId={build.id}
+            component="transmission"
+            componentTitle="Transmission"
+            isOwner={build.is_owner}
+          />
         </section>
 
         {/* Suspension & Handling */}
@@ -1385,6 +1424,14 @@ export const BuildDetailPage: React.FC = () => {
               <span className="spec-value">{build.sway_bar_rear || '—'}</span>
             </div>
           </div>
+
+          {/* Suspension Notes */}
+          <ComponentNotes
+            buildId={build.id}
+            component="suspension"
+            componentTitle="Suspension"
+            isOwner={build.is_owner}
+          />
         </section>
 
         {/* Tires & Wheels */}
@@ -1416,6 +1463,14 @@ export const BuildDetailPage: React.FC = () => {
               <span className="spec-value">{build.wheel_size_rear || '—'}</span>
             </div>
           </div>
+
+          {/* Tires & Wheels Notes */}
+          <ComponentNotes
+            buildId={build.id}
+            component="tires-wheels"
+            componentTitle="Tires & Wheels"
+            isOwner={build.is_owner}
+          />
         </section>
 
         {/* Fluids & Lubricants */}
@@ -1541,51 +1596,74 @@ export const BuildDetailPage: React.FC = () => {
         <section className="detail-section">
           <div className="section-header">
             <h2>Maintenance History</h2>
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowMaintenanceModal(true)}
-            >
-              Add Maintenance Record
-            </button>
+            {build.is_owner && (
+              <button
+                className="btn btn-primary"
+                onClick={() => setShowMaintenanceModal(true)}
+              >
+                Add Maintenance Record
+              </button>
+            )}
           </div>
 
           {build.maintenance && build.maintenance.length > 0 ? (
             <div className="maintenance-list">
               {build.maintenance.map((record: any, index: number) => (
-                <div key={index} className="maintenance-record">
+                <div
+                  key={record.id || index}
+                  className="maintenance-record"
+                  onClick={build.is_owner ? () => handleEditMaintenance(record) : undefined}
+                  style={{ cursor: build.is_owner ? 'pointer' : 'default' }}
+                >
                   <div className="maintenance-header">
                     <strong>{record.maintenance_type}</strong>
                     <span className="maintenance-date">
                       {new Date(record.timestamp).toLocaleDateString()}
                     </span>
                   </div>
+
                   <div className="maintenance-details">
                     {record.odometer_miles && (
-                      <span className="detail-item">Odometer: {record.odometer_miles.toLocaleString()} mi</span>
+                      <div className="detail-item">
+                        <strong>Odometer:</strong> {record.odometer_miles.toLocaleString()} mi
+                      </div>
                     )}
                     {record.engine_hours && (
-                      <span className="detail-item">Engine Hours: {record.engine_hours}</span>
-                    )}
-                    {record.cost && (
-                      <span className="detail-item cost">Cost: ${record.cost.toFixed(2)}</span>
+                      <div className="detail-item">
+                        <strong>Engine Hours:</strong> {record.engine_hours}
+                      </div>
                     )}
                   </div>
-                  {record.brand && (
+
+                  {(record.brand || record.part_number || record.quantity) && (
                     <div className="maintenance-parts">
-                      Parts: {record.brand}
-                      {record.part_number && ` (${record.part_number})`}
-                      {record.quantity && ` × ${record.quantity}`}
+                      <strong>Parts:</strong>
+                      <div className="parts-details">
+                        {record.brand && <span>Brand: {record.brand}</span>}
+                        {record.part_number && <span>P/N: {record.part_number}</span>}
+                        {record.quantity && <span>Qty: {record.quantity}</span>}
+                      </div>
                     </div>
                   )}
+
                   {record.notes && (
-                    <div className="maintenance-notes">{record.notes}</div>
+                    <div className="maintenance-notes">
+                      <strong>Notes:</strong>
+                      <p>{record.notes}</p>
+                    </div>
+                  )}
+
+                  {build.is_owner && (
+                    <div className="maintenance-footer">
+                      <small>Click to edit</small>
+                    </div>
                   )}
                 </div>
               ))}
             </div>
           ) : (
             <div className="empty-state">
-              <p>No maintenance records yet. Click "Add Maintenance Record" to track your first service.</p>
+              <p>No maintenance records yet.{build.is_owner && ' Click "Add Maintenance Record" to track your first service.'}</p>
             </div>
           )}
         </section>
@@ -1603,10 +1681,15 @@ export const BuildDetailPage: React.FC = () => {
       {showMaintenanceModal && (
         <MaintenanceRecordModal
           buildId={parseInt(id!)}
-          onClose={() => setShowMaintenanceModal(false)}
+          editingRecord={editingMaintenance}
+          onClose={() => {
+            setShowMaintenanceModal(false);
+            setEditingMaintenance(null);
+          }}
           onSuccess={() => {
-            // Reload build data to show new maintenance record
+            // Reload build data to show new/updated maintenance record
             loadBuild(parseInt(id!));
+            setEditingMaintenance(null);
           }}
         />
       )}

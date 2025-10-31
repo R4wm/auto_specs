@@ -1,0 +1,98 @@
+{
+  "description": "Example showing how the requested engine specifications are stored in engine_internals_json",
+  "specs_requested": [
+    "3/8\" Cap Screws",
+    "5.4\" Rod Length",
+    "ARP 8740 Rod Bolts",
+    "Forged .030 Pistons",
+    "Flat-Top Piston Design",
+    "Pro-Stock I-Beam Rods",
+    "3.400\" Stroke Series 9000 Cast Crankshaft"
+  ],
+  "engine_internals_json": {
+    "crankshaft": {
+      "model": "Series 9000 Cast",
+      "stroke_in": 3.400,
+      "material": "cast",
+      "manufacturer": "Eagle",
+      "notes": "Cast crankshaft for street/strip use"
+    },
+    "connecting_rods": {
+      "type": "Pro-Stock I-Beam",
+      "length_in": 5.400,
+      "beam_style": "I-beam",
+      "material": "forged steel",
+      "manufacturer": "Scat",
+      "part_number": "SCAT-XXXX",
+      "bolts": {
+        "type": "ARP 8740",
+        "size": "3/8\"",
+        "manufacturer": "ARP",
+        "material": "chromoly 8740",
+        "torque_ft_lbs": 45,
+        "lube": "ARP moly lube"
+      },
+      "notes": "Pro-Stock style I-beam rods with ARP8740 hardware"
+    },
+    "pistons": {
+      "design": "flat-top",
+      "oversize_in": 0.030,
+      "material": "forged aluminum",
+      "manufacturer": "Wiseco",
+      "part_number": "K0085X30",
+      "compression_height_in": 1.560,
+      "dome_dish_cc": 0,
+      "notes": "Forged flat-top pistons, 0.030\" oversize"
+    },
+    "fasteners": {
+      "main_cap_screws": {
+        "size": "3/8\"",
+        "type": "cap screw",
+        "manufacturer": "ARP",
+        "material": "chromoly",
+        "torque_ft_lbs": 70
+      },
+      "head_bolts": {
+        "size": "7/16\"",
+        "manufacturer": "ARP",
+        "torque_ft_lbs": 75
+      }
+    },
+    "assembly_specs": {
+      "ring_gaps": {
+        "top_ring_in": 0.018,
+        "second_ring_in": 0.020,
+        "oil_ring_in": 0.015
+      },
+      "bearing_clearances": {
+        "main_bearing_in": 0.002,
+        "rod_bearing_in": 0.0025
+      }
+    },
+    "notes": "Budget-friendly street/strip build with forged internals"
+  },
+  "field_mapping": {
+    "3/8\" Cap Screws": "engine_internals_json.fasteners.main_cap_screws.size",
+    "5.4\" Rod Length": "engine_internals_json.connecting_rods.length_in",
+    "ARP 8740 Rod Bolts": "engine_internals_json.connecting_rods.bolts.type",
+    "Forged .030 Pistons": {
+      "material": "engine_internals_json.pistons.material",
+      "oversize": "engine_internals_json.pistons.oversize_in"
+    },
+    "Flat-Top Piston Design": "engine_internals_json.pistons.design",
+    "Pro-Stock I-Beam Rods": "engine_internals_json.connecting_rods.type",
+    "3.400\" Stroke Series 9000 Cast Crankshaft": {
+      "stroke": "engine_internals_json.crankshaft.stroke_in",
+      "model": "engine_internals_json.crankshaft.model"
+    }
+  },
+  "query_examples": {
+    "find_arp_8740_rod_bolts": "SELECT * FROM builds WHERE engine_internals_json->'connecting_rods'->'bolts'->>'type' = 'ARP 8740';",
+    "find_5_4_rod_length": "SELECT * FROM builds WHERE (engine_internals_json->'connecting_rods'->>'length_in')::numeric = 5.400;",
+    "find_forged_pistons": "SELECT * FROM builds WHERE engine_internals_json->'pistons'->>'material' LIKE '%forged%';",
+    "find_flat_top_pistons": "SELECT * FROM builds WHERE engine_internals_json->'pistons'->>'design' = 'flat-top';",
+    "find_i_beam_rods": "SELECT * FROM builds WHERE engine_internals_json->'connecting_rods'->>'type' LIKE '%I-Beam%';",
+    "find_3_8_cap_screws": "SELECT * FROM builds WHERE engine_internals_json->'fasteners'->'main_cap_screws'->>'size' = '3/8\"';",
+    "find_3_4_stroke": "SELECT * FROM builds WHERE (engine_internals_json->'crankshaft'->>'stroke_in')::numeric = 3.400;"
+  }
+}

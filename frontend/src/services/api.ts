@@ -53,6 +53,7 @@ export interface Build {
   id: number;
   user_id: number;
   name: string;
+  slug: string;  // URL-safe slug for public sharing
 
   // Basic Info
   use_type?: string;
@@ -231,6 +232,27 @@ export interface MaintenanceAttachment {
   uploaded_at: string;
 }
 
+export interface ComponentNote {
+  id: string;
+  timestamp: string;
+  user_id: number;
+  user_name: string;
+  content: string;
+  action_type: 'add' | 'edit' | 'delete';
+  last_edited?: string;
+}
+
+export type ComponentType =
+  | 'engine-internals'
+  | 'suspension'
+  | 'tires-wheels'
+  | 'rear-differential'
+  | 'transmission'
+  | 'frame'
+  | 'cab-interior'
+  | 'brakes'
+  | 'additional-components';
+
 // Auth API
 export const authAPI = {
   login: async (data: LoginRequest): Promise<TokenResponse> => {
@@ -261,13 +283,18 @@ export const buildsAPI = {
     return response.data;
   },
 
-  getById: async (id: number): Promise<BuildDetail> => {
-    const response = await api.get(`/api/builds/${id}`);
+  getById: async (identifier: string | number): Promise<BuildDetail> => {
+    const response = await api.get(`/api/builds/${identifier}`);
     return response.data;
   },
 
   create: async (data: Partial<Build>): Promise<Build> => {
     const response = await api.post('/api/builds', data);
+    return response.data;
+  },
+
+  update: async (identifier: string | number, changes: Partial<Build>): Promise<any> => {
+    const response = await api.patch(`/api/builds/${identifier}`, changes);
     return response.data;
   },
 
@@ -367,6 +394,11 @@ export const maintenanceAPI = {
     return response.data;
   },
 
+  update: async (buildId: number, maintenanceId: number, data: Partial<MaintenanceRecord>) => {
+    const response = await api.put(`/api/builds/${buildId}/maintenance/${maintenanceId}`, data);
+    return response.data;
+  },
+
   uploadAttachment: async (maintenanceId: number, file: File, description?: string) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -382,6 +414,28 @@ export const maintenanceAPI = {
   getAttachments: async (maintenanceId: number): Promise<MaintenanceAttachment[]> => {
     const response = await api.get(`/api/maintenance/${maintenanceId}/attachments`);
     return response.data;
+  },
+};
+
+// Component Notes API
+export const componentNotesAPI = {
+  getAll: async (buildId: number, component: ComponentType): Promise<ComponentNote[]> => {
+    const response = await api.get(`/api/builds/${buildId}/${component}/notes`);
+    return response.data.notes;
+  },
+
+  add: async (buildId: number, component: ComponentType, content: string): Promise<ComponentNote> => {
+    const response = await api.post(`/api/builds/${buildId}/${component}/notes`, { content });
+    return response.data.note;
+  },
+
+  update: async (buildId: number, component: ComponentType, noteId: string, content: string): Promise<ComponentNote> => {
+    const response = await api.put(`/api/builds/${buildId}/${component}/notes/${noteId}`, { content });
+    return response.data.note;
+  },
+
+  delete: async (buildId: number, component: ComponentType, noteId: string): Promise<void> => {
+    await api.delete(`/api/builds/${buildId}/${component}/notes/${noteId}`);
   },
 };
 
