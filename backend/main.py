@@ -497,6 +497,86 @@ async def get_build(build_identifier: str, request: Request, current_user: Optio
         ''', (build_id,))
         performance = cursor.fetchall()
 
+        # Fetch component data
+        components = {}
+
+        # Engine Internals
+        if build_dict.get('engine_internals_id'):
+            cursor.execute('SELECT * FROM engine_internals WHERE id = %s', (build_dict['engine_internals_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['engine_internals'] = row_to_dict(comp)
+
+        # Transmission
+        if build_dict.get('transmission_id'):
+            cursor.execute('SELECT * FROM transmissions WHERE id = %s', (build_dict['transmission_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['transmission'] = row_to_dict(comp)
+
+        # Differential
+        if build_dict.get('differential_id'):
+            cursor.execute('SELECT * FROM differentials WHERE id = %s', (build_dict['differential_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['differential'] = row_to_dict(comp)
+
+        # Suspension
+        if build_dict.get('suspension_id'):
+            cursor.execute('SELECT * FROM suspensions WHERE id = %s', (build_dict['suspension_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['suspension'] = row_to_dict(comp)
+
+        # Tires & Wheels
+        if build_dict.get('tires_wheels_id'):
+            cursor.execute('SELECT * FROM tires_wheels WHERE id = %s', (build_dict['tires_wheels_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['tires_wheels'] = row_to_dict(comp)
+
+        # Frame
+        if build_dict.get('frame_id'):
+            cursor.execute('SELECT * FROM frames WHERE id = %s', (build_dict['frame_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['frame'] = row_to_dict(comp)
+
+        # Cab & Interior
+        if build_dict.get('cab_interior_id'):
+            cursor.execute('SELECT * FROM cab_interiors WHERE id = %s', (build_dict['cab_interior_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['cab_interior'] = row_to_dict(comp)
+
+        # Brakes
+        if build_dict.get('brakes_id'):
+            cursor.execute('SELECT * FROM brakes WHERE id = %s', (build_dict['brakes_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['brakes'] = row_to_dict(comp)
+
+        # Fuel System
+        if build_dict.get('fuel_system_id'):
+            cursor.execute('SELECT * FROM fuel_systems WHERE id = %s', (build_dict['fuel_system_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['fuel_system'] = row_to_dict(comp)
+
+        # Induction System
+        if build_dict.get('induction_system_id'):
+            cursor.execute('SELECT * FROM induction_systems WHERE id = %s', (build_dict['induction_system_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['induction_system'] = row_to_dict(comp)
+
+        # Additional Components
+        if build_dict.get('additional_components_id'):
+            cursor.execute('SELECT * FROM additional_components WHERE id = %s', (build_dict['additional_components_id'],))
+            comp = cursor.fetchone()
+            if comp:
+                components['additional_components'] = row_to_dict(comp)
+
     # Check if current user is the owner
     is_owner = current_user is not None and current_user.get('id') == build_dict.get('user_id')
 
@@ -509,7 +589,8 @@ async def get_build(build_identifier: str, request: Request, current_user: Optio
         "vehicle_parts": [row_to_dict(part) for part in vehicle_parts],
         "tuning": row_to_dict(tuning),
         "maintenance": [row_to_dict(m) for m in maintenance],
-        "performance": [row_to_dict(p) for p in performance]
+        "performance": [row_to_dict(p) for p in performance],
+        "components": components
     }
 
 @app.post("/api/builds")
@@ -675,6 +756,95 @@ async def update_build_partial(
         "batch_id": batch_id,
         "build": row_to_dict(updated_build)
     }
+
+# Component API endpoints
+from component_api import (
+    create_component,
+    get_component,
+    update_component,
+    delete_component,
+    list_templates,
+    clone_component,
+    export_component,
+    import_component,
+    COMPONENT_TABLES
+)
+
+@app.post("/api/components/{component_type}")
+async def api_create_component(
+    component_type: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new component"""
+    body = await request.json()
+    return create_component(
+        component_type=component_type,
+        user_id=current_user['id'],
+        name=body.get('name'),
+        component_data=body.get('component_data', {}),
+        description=body.get('description'),
+        is_template=body.get('is_template', False)
+    )
+
+@app.get("/api/components/{component_type}/{component_id}")
+async def api_get_component(component_type: str, component_id: int):
+    """Get a component by ID (public read access)"""
+    return get_component(component_type, component_id)
+
+@app.patch("/api/components/{component_type}/{component_id}")
+async def api_update_component(
+    component_type: str,
+    component_id: int,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a component (owner only)"""
+    updates = await request.json()
+    return update_component(component_type, component_id, current_user['id'], updates)
+
+@app.delete("/api/components/{component_type}/{component_id}")
+async def api_delete_component(
+    component_type: str,
+    component_id: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a component (owner only, must not be in use)"""
+    return delete_component(component_type, component_id, current_user['id'])
+
+@app.get("/api/templates/{component_type}")
+async def api_list_templates(component_type: str):
+    """List all templates for a component type"""
+    return list_templates(component_type)
+
+@app.post("/api/components/{component_type}/{component_id}/clone")
+async def api_clone_component(
+    component_type: str,
+    component_id: int,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Clone a component"""
+    body = await request.json()
+    new_name = body.get('name')
+    if not new_name:
+        raise HTTPException(status_code=400, detail="Name required for clone")
+    return clone_component(component_type, component_id, current_user['id'], new_name)
+
+@app.get("/api/components/{component_type}/{component_id}/export")
+async def api_export_component(component_type: str, component_id: int):
+    """Export component as JSON"""
+    return export_component(component_type, component_id)
+
+@app.post("/api/components/{component_type}/import")
+async def api_import_component(
+    component_type: str,
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Import component from JSON"""
+    import_data = await request.json()
+    return import_component(component_type, current_user['id'], import_data)
 
 # Health check endpoint
 @app.get("/api/health")

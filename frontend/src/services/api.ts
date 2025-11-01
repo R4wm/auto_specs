@@ -150,6 +150,54 @@ export interface BuildDetail extends Build {
   tuning?: any;
   maintenance?: any[];
   performance?: any[];
+  components?: {
+    engine_internals?: Component;
+    transmission?: Component;
+    differential?: Component;
+    suspension?: Component;
+    tires_wheels?: Component;
+    frame?: Component;
+    cab_interior?: Component;
+    brakes?: Component;
+    fuel_system?: Component;
+    induction_system?: Component;
+    additional_components?: Component;
+  };
+}
+
+// Component interfaces
+export interface Component {
+  id: number;
+  user_id: number;
+  name: string;
+  description?: string;
+  is_template: boolean;
+  component_data: any;  // Flexible JSONB data
+  data_size_bytes: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ComponentType =
+  | 'engine-internals'
+  | 'transmission'
+  | 'differential'
+  | 'suspension'
+  | 'tires-wheels'
+  | 'frame'
+  | 'cab-interior'
+  | 'brakes'
+  | 'fuel-system'
+  | 'induction-system'
+  | 'additional-components';
+
+export interface ComponentExport {
+  export_version: string;
+  component_type: string;
+  name: string;
+  description?: string;
+  data: any;
+  exported_at: string;
 }
 
 // Snapshot interfaces
@@ -241,17 +289,6 @@ export interface ComponentNote {
   action_type: 'add' | 'edit' | 'delete';
   last_edited?: string;
 }
-
-export type ComponentType =
-  | 'engine-internals'
-  | 'suspension'
-  | 'tires-wheels'
-  | 'rear-differential'
-  | 'transmission'
-  | 'frame'
-  | 'cab-interior'
-  | 'brakes'
-  | 'additional-components';
 
 // Auth API
 export const authAPI = {
@@ -436,6 +473,53 @@ export const componentNotesAPI = {
 
   delete: async (buildId: number, component: ComponentType, noteId: string): Promise<void> => {
     await api.delete(`/api/builds/${buildId}/${component}/notes/${noteId}`);
+  },
+};
+
+// Components API
+export const componentsAPI = {
+  create: async (componentType: ComponentType, data: {
+    name: string;
+    component_data: any;
+    description?: string;
+    is_template?: boolean;
+  }): Promise<Component> => {
+    const response = await api.post(`/api/components/${componentType}`, data);
+    return response.data;
+  },
+
+  getById: async (componentType: ComponentType, id: number): Promise<Component> => {
+    const response = await api.get(`/api/components/${componentType}/${id}`);
+    return response.data;
+  },
+
+  update: async (componentType: ComponentType, id: number, updates: Partial<Component>): Promise<Component> => {
+    const response = await api.patch(`/api/components/${componentType}/${id}`, updates);
+    return response.data;
+  },
+
+  delete: async (componentType: ComponentType, id: number): Promise<void> => {
+    await api.delete(`/api/components/${componentType}/${id}`);
+  },
+
+  listTemplates: async (componentType: ComponentType): Promise<Component[]> => {
+    const response = await api.get(`/api/templates/${componentType}`);
+    return response.data;
+  },
+
+  clone: async (componentType: ComponentType, id: number, newName: string): Promise<Component> => {
+    const response = await api.post(`/api/components/${componentType}/${id}/clone`, { name: newName });
+    return response.data;
+  },
+
+  export: async (componentType: ComponentType, id: number): Promise<ComponentExport> => {
+    const response = await api.get(`/api/components/${componentType}/${id}/export`);
+    return response.data;
+  },
+
+  import: async (componentType: ComponentType, importData: ComponentExport): Promise<Component> => {
+    const response = await api.post(`/api/components/${componentType}/import`, importData);
+    return response.data;
   },
 };
 
